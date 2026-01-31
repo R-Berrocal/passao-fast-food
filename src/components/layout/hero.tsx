@@ -33,13 +33,13 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col gap-4 sm:flex-row">
-            <Button size="lg" className="min-w-[160px] text-base" asChild>
+            <Button size="lg" className="min-w-40 text-base" asChild>
               <Link href="#menu">Ver Menú</Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="min-w-[160px] border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 text-base"
+              className="min-w-40 border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 text-base"
               asChild
             >
               <Link href="/checkout">Ordenar Ahora</Link>
@@ -67,7 +67,7 @@ export function Hero() {
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-background to-transparent" />
     </section>
   );
 }
