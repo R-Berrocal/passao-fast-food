@@ -9,7 +9,6 @@ import {
   Menu,
   UtensilsCrossed,
   CircleDot,
-  Sandwich,
   Utensils,
   PawPrint,
 } from "lucide-react";

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clock, Package, TrendingUp, Users } from "lucide-react";
+import { ArrowLeft, Clock, Package, TrendingUp, Users, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -115,14 +115,32 @@ export default function AdminPage() {
             </Button>
             <h1 className="ml-4 text-xl font-bold">Panel de Administración</h1>
           </div>
-          <Badge variant="outline" className="gap-1">
-            <span className="h-2 w-2 rounded-full bg-green-500" />
-            En línea
-          </Badge>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Gestión de Productos */}
+        <Card className="mb-8 border-primary/50 bg-primary/5">
+          <CardContent className="flex items-center justify-between p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <UtensilsCrossed className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Gestión de Productos</h2>
+                <p className="text-sm text-muted-foreground">
+                  Crear, editar y administrar el menú
+                </p>
+              </div>
+            </div>
+            <Button asChild size="lg">
+              <Link href="/admin/products">
+                Administrar Productos
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardContent className="flex items-center gap-4 p-4">
