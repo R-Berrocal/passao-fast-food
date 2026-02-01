@@ -5,14 +5,15 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { MenuItem as MenuItemType, formatPrice } from "@/data/menu";
+import type { Product } from "@/types/models";
+import { formatPrice } from "@/stores/use-cart-store";
 import { AddToCartDialog } from "./add-to-cart-dialog";
 
 interface MenuItemProps {
-  item: MenuItemType;
+  product: Product;
 }
 
-export function MenuItem({ item }: MenuItemProps) {
+export function MenuItem({ product }: MenuItemProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -23,8 +24,8 @@ export function MenuItem({ item }: MenuItemProps) {
       >
         <div className="relative h-40 w-full overflow-hidden">
           <Image
-            src={item.image}
-            alt={item.name}
+            src={product.image}
+            alt={product.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -43,20 +44,20 @@ export function MenuItem({ item }: MenuItemProps) {
         </div>
 
         <div className="p-4">
-          <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
-          {item.description && (
+          <h3 className="font-semibold text-foreground truncate">{product.name}</h3>
+          {product.description && (
             <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-              {item.description}
+              {product.description}
             </p>
           )}
           <p className="mt-2 text-lg font-bold text-primary">
-            {formatPrice(item.price)}
+            {formatPrice(product.price)}
           </p>
         </div>
       </Card>
 
       <AddToCartDialog
-        item={item}
+        product={product}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />

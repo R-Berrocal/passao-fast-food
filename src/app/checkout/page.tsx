@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Store } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { ArrowLeft, MapPin, Store, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,16 +14,132 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCartStore, useCartTotal } from "@/stores/use-cart-store";
-import { formatPrice } from "@/data/menu";
+import { useCartStore, useCartTotal, formatPrice } from "@/stores/use-cart-store";
+import { useBusinessConfig } from "@/hooks/use-business";
+import { useCreateOrder } from "@/hooks/use-orders";
+
+const deliverySchema = z.object({
+  customerName: z.string().min(2, "El nombre es requerido"),
+  customerPhone: z.string().min(10, "Número de teléfono inválido"),
+  customerEmail: z.string().email().optional().or(z.literal("")),
+  deliveryAddress: z.string().min(5, "La dirección es requerida"),
+  notes: z.string().optional(),
+});
+
+const pickupSchema = z.object({
+  customerName: z.string().min(2, "El nombre es requerido"),
+  customerPhone: z.string().min(10, "Número de teléfono inválido"),
+  customerEmail: z.string().email().optional().or(z.literal("")),
+  notes: z.string().optional(),
+});
+
+type DeliveryFormData = z.infer<typeof deliverySchema>;
+type PickupFormData = z.infer<typeof pickupSchema>;
 
 export default function CheckoutPage() {
   const items = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
   const total = useCartTotal();
   const [orderType, setOrderType] = useState<"delivery" | "pickup">("delivery");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "nequi" | "daviplata" | "transfer">("cash");
+  const [orderSuccess, setOrderSuccess] = useState<{ orderNumber: string } | null>(null);
 
-  const deliveryCost = orderType === "delivery" ? 5000 : 0;
+  const { config, isLoading: configLoading } = useBusinessConfig();
+  const { createOrder, isLoading: orderLoading, error: orderError } = useCreateOrder();
+
+  const deliveryForm = useForm<DeliveryFormData>({
+    resolver: zodResolver(deliverySchema),
+    defaultValues: {
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
+      deliveryAddress: "",
+      notes: "",
+    },
+  });
+
+  const pickupForm = useForm<PickupFormData>({
+    resolver: zodResolver(pickupSchema),
+    defaultValues: {
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
+      notes: "",
+    },
+  });
+
+  const deliveryCost = orderType === "delivery" ? (config?.deliveryFee || 5000) : 0;
   const finalTotal = total + deliveryCost;
+
+  const handleSubmit = async () => {
+    const formData = orderType === "delivery"
+      ? deliveryForm.getValues()
+      : pickupForm.getValues();
+
+    const isValid = orderType === "delivery"
+      ? await deliveryForm.trigger()
+      : await pickupForm.trigger();
+
+    if (!isValid) return;
+
+    const orderItems = items.map((item) => ({
+      productId: item.id,
+      quantity: item.quantity,
+      additions: item.additions.map((a) => ({ additionId: a.id })),
+    }));
+
+    const order = await createOrder({
+      customerName: formData.customerName,
+      customerPhone: formData.customerPhone,
+      customerEmail: formData.customerEmail || undefined,
+      type: orderType,
+      deliveryAddress: orderType === "delivery" ? (formData as DeliveryFormData).deliveryAddress : undefined,
+      notes: formData.notes,
+      paymentMethod,
+      items: orderItems,
+    });
+
+    if (order) {
+      setOrderSuccess({ orderNumber: order.orderNumber });
+      clearCart();
+    }
+  };
+
+  if (orderSuccess) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b">
+          <div className="container mx-auto flex h-16 items-center px-4">
+            <h1 className="text-xl font-bold">Pedido Confirmado</h1>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-16">
+          <Card className="mx-auto max-w-md text-center">
+            <CardContent className="pt-6">
+              <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
+              <h2 className="mt-4 text-2xl font-bold">Pedido Realizado</h2>
+              <p className="mt-2 text-muted-foreground">
+                Tu pedido ha sido recibido exitosamente
+              </p>
+              <div className="mt-4 rounded-lg bg-muted p-4">
+                <p className="text-sm text-muted-foreground">Número de orden</p>
+                <p className="text-2xl font-bold text-primary">{orderSuccess.orderNumber}</p>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground">
+                {orderType === "delivery"
+                  ? "Recibirás tu pedido en la dirección indicada"
+                  : "Puedes recoger tu pedido en nuestro local"}
+              </p>
+              <Button asChild className="mt-6 w-full">
+                <Link href="/">Volver al Menú</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,25 +181,63 @@ export default function CheckoutPage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="name">Nombre completo</Label>
-                        <Input id="name" placeholder="Tu nombre" />
+                        <Input
+                          id="name"
+                          placeholder="Tu nombre"
+                          {...deliveryForm.register("customerName")}
+                        />
+                        {deliveryForm.formState.errors.customerName && (
+                          <p className="text-sm text-destructive">
+                            {deliveryForm.formState.errors.customerName.message}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone">Teléfono</Label>
-                        <Input id="phone" placeholder="300 123 4567" />
+                        <Input
+                          id="phone"
+                          placeholder="3001234567"
+                          {...deliveryForm.register("customerPhone")}
+                        />
+                        {deliveryForm.formState.errors.customerPhone && (
+                          <p className="text-sm text-destructive">
+                            {deliveryForm.formState.errors.customerPhone.message}
+                          </p>
+                        )}
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Correo electrónico (opcional)</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="tu@email.com"
+                        {...deliveryForm.register("customerEmail")}
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="address">Dirección</Label>
-                      <Input id="address" placeholder="Calle, número, barrio" />
+                      <Input
+                        id="address"
+                        placeholder="Calle, número, barrio"
+                        {...deliveryForm.register("deliveryAddress")}
+                      />
+                      {deliveryForm.formState.errors.deliveryAddress && (
+                        <p className="text-sm text-destructive">
+                          {deliveryForm.formState.errors.deliveryAddress.message}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="notes">Notas adicionales</Label>
+                      <Label htmlFor="notes">Notas adicionales (opcional)</Label>
                       <Textarea
                         id="notes"
                         placeholder="Indicaciones para la entrega, referencias, etc."
                         rows={3}
+                        {...deliveryForm.register("notes")}
                       />
                     </div>
                   </TabsContent>
@@ -89,19 +246,57 @@ export default function CheckoutPage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="pickup-name">Nombre completo</Label>
-                        <Input id="pickup-name" placeholder="Tu nombre" />
+                        <Input
+                          id="pickup-name"
+                          placeholder="Tu nombre"
+                          {...pickupForm.register("customerName")}
+                        />
+                        {pickupForm.formState.errors.customerName && (
+                          <p className="text-sm text-destructive">
+                            {pickupForm.formState.errors.customerName.message}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="pickup-phone">Teléfono</Label>
-                        <Input id="pickup-phone" placeholder="300 123 4567" />
+                        <Input
+                          id="pickup-phone"
+                          placeholder="3001234567"
+                          {...pickupForm.register("customerPhone")}
+                        />
+                        {pickupForm.formState.errors.customerPhone && (
+                          <p className="text-sm text-destructive">
+                            {pickupForm.formState.errors.customerPhone.message}
+                          </p>
+                        )}
                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pickup-email">Correo electrónico (opcional)</Label>
+                      <Input
+                        id="pickup-email"
+                        type="email"
+                        placeholder="tu@email.com"
+                        {...pickupForm.register("customerEmail")}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pickup-notes">Notas adicionales (opcional)</Label>
+                      <Textarea
+                        id="pickup-notes"
+                        placeholder="Indicaciones especiales"
+                        rows={3}
+                        {...pickupForm.register("notes")}
+                      />
                     </div>
 
                     <Card className="bg-muted">
                       <CardContent className="p-4">
                         <h4 className="font-semibold">Dirección del local</h4>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Barranquilla, Colombia
+                          {config?.address || "Barranquilla, Colombia"}
                         </p>
                         <p className="mt-2 text-sm text-muted-foreground">
                           Horario: 5:00 PM - 11:00 PM
@@ -118,14 +313,25 @@ export default function CheckoutPage() {
                 <CardTitle>Método de Pago</CardTitle>
               </CardHeader>
               <CardContent>
-                <RadioGroup defaultValue="cash">
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}
+                >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="cash" id="cash" />
                     <Label htmlFor="cash">Efectivo al recibir</Label>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="nequi" id="nequi" />
+                    <Label htmlFor="nequi">Nequi</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="daviplata" id="daviplata" />
+                    <Label htmlFor="daviplata">Daviplata</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <RadioGroupItem value="transfer" id="transfer" />
-                    <Label htmlFor="transfer">Transferencia Nequi/Daviplata</Label>
+                    <Label htmlFor="transfer">Transferencia bancaria</Label>
                   </div>
                 </RadioGroup>
               </CardContent>
@@ -184,8 +390,26 @@ export default function CheckoutPage() {
                       <span className="text-primary">{formatPrice(finalTotal)}</span>
                     </div>
 
-                    <Button className="w-full" size="lg" disabled={items.length === 0}>
-                      Confirmar Pedido
+                    {orderError && (
+                      <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                        {orderError}
+                      </div>
+                    )}
+
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      disabled={items.length === 0 || orderLoading || configLoading}
+                      onClick={handleSubmit}
+                    >
+                      {orderLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Procesando...
+                        </>
+                      ) : (
+                        "Confirmar Pedido"
+                      )}
                     </Button>
                   </>
                 )}

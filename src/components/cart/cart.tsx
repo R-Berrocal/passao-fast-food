@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useCartStore, useCartTotal } from "@/stores/use-cart-store";
-import { formatPrice } from "@/data/menu";
+import { useCartStore, useCartTotal, formatPrice } from "@/stores/use-cart-store";
 import Link from "next/link";
 
 export function Cart() {

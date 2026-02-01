@@ -67,7 +67,7 @@ async function main() {
     }),
   ]);
 
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.slug, c.id]));
+  const categoryMap = Object.fromEntries(categories.map((c: { slug: string; id: string }) => [c.slug, c.id]));
 
   // ============================================================================
   // PRODUCTOS

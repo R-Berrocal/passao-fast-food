@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Moon,
   Sun,
@@ -16,6 +18,8 @@ import {
   Settings,
   ShoppingBag,
   ChevronDown,
+  Loader2,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +50,8 @@ import { Separator } from "@/components/ui/separator";
 import { useCartStore, useCartItemCount } from "@/stores/use-cart-store";
 import { Cart } from "@/components/cart/cart";
 import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from "@/lib/validations/auth";
 
 export function Navbar() {
   const { setTheme, resolvedTheme } = useTheme();
@@ -54,7 +60,18 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const { user, isAuthenticated, isLoading, isSubmitting, error, login, register, logout, clearError } = useAuth();
+
+  const loginForm = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  const registerForm = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: "", email: "", phone: "", password: "" },
+  });
 
   const navLinks = [
     { href: "#menu", label: "Menú", icon: UtensilsCrossed },
@@ -63,19 +80,48 @@ export function Navbar() {
     { href: "#patacones", label: "Patacones", icon: Utensils },
   ];
 
-  const handleLogin = () => {
-    setLoginOpen(false);
-    setIsLoggedIn(true);
+  const handleLogin = async (data: LoginInput) => {
+    const success = await login(data);
+    if (success) {
+      setLoginOpen(false);
+      loginForm.reset();
+    }
   };
 
-  const handleRegister = () => {
-    setRegisterOpen(false);
-    setIsLoggedIn(true);
+  const handleRegister = async (data: RegisterInput) => {
+    const success = await register(data);
+    if (success) {
+      setRegisterOpen(false);
+      registerForm.reset();
+    }
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
+    logout();
   };
+
+  const openLoginDialog = () => {
+    clearError();
+    loginForm.reset();
+    setLoginOpen(true);
+  };
+
+  const openRegisterDialog = () => {
+    clearError();
+    registerForm.reset();
+    setRegisterOpen(true);
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const isStaff = user?.role === "admin" || user?.role === "staff";
 
   return (
     <>
@@ -104,19 +150,23 @@ export function Navbar() {
 
           <div className="flex items-center gap-2">
             {/* Auth buttons - Desktop */}
-            {!isLoggedIn ? (
+            {isLoading ? (
+              <div className="hidden sm:flex items-center">
+                <Loader2 className="h-5 w-5 animate-spin text-zinc-800 dark:text-gray-300" />
+              </div>
+            ) : !isAuthenticated ? (
               <div className="hidden sm:flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setLoginOpen(true)}
+                  onClick={openLoginDialog}
                   className="text-zinc-800 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
                 >
                   Iniciar sesión
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => setRegisterOpen(true)}
+                  onClick={openRegisterDialog}
                   className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
                 >
                   Crear cuenta
@@ -130,18 +180,29 @@ export function Navbar() {
                     className="hidden sm:flex items-center gap-2 text-zinc-800 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 dark:bg-primary text-white dark:text-primary-foreground font-semibold text-sm">
-                      CP
+                      {user ? getInitials(user.name) : "?"}
                     </div>
-                    <span className="hidden lg:inline">Carlos Pérez</span>
+                    <span className="hidden lg:inline">{user?.name}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
-                    <p className="font-medium">Carlos Pérez</p>
-                    <p className="text-sm text-muted-foreground">carlos@email.com</p>
+                    <p className="font-medium">{user?.name}</p>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
                   </div>
                   <DropdownMenuSeparator />
+                  {isStaff && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/dashboard">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem>
                     <User className="mr-2 h-4 w-4" />
                     Mi Perfil
@@ -210,15 +271,15 @@ export function Navbar() {
                 <Separator className="my-4" />
 
                 {/* User section - Mobile */}
-                {isLoggedIn ? (
+                {isAuthenticated && user ? (
                   <div className="mb-4 rounded-lg bg-muted p-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
-                        CP
+                        {getInitials(user.name)}
                       </div>
                       <div>
-                        <p className="font-medium">Carlos Pérez</p>
-                        <p className="text-sm text-muted-foreground">carlos@email.com</p>
+                        <p className="font-medium">{user.name}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                   </div>
@@ -227,7 +288,7 @@ export function Navbar() {
                     <Button
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        setLoginOpen(true);
+                        openLoginDialog();
                       }}
                       variant="outline"
                       className="w-full justify-start"
@@ -238,7 +299,7 @@ export function Navbar() {
                     <Button
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        setRegisterOpen(true);
+                        openRegisterDialog();
                       }}
                       className="w-full justify-start"
                     >
@@ -267,10 +328,20 @@ export function Navbar() {
                   })}
                 </nav>
 
-                {isLoggedIn && (
+                {isAuthenticated && (
                   <>
                     <Separator className="my-4" />
                     <nav className="flex flex-col gap-1">
+                      {isStaff && (
+                        <Link
+                          href="/admin/dashboard"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                        >
+                          <LayoutDashboard className="h-5 w-5" />
+                          Dashboard
+                        </Link>
+                      )}
                       <Link
                         href="#"
                         onClick={() => setMobileMenuOpen(false)}
@@ -323,50 +394,64 @@ export function Navbar() {
               Ingresa tus credenciales para acceder a tu cuenta
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@email.com"
-              />
+          <form onSubmit={loginForm.handleSubmit(handleLogin)}>
+            <div className="grid gap-4 py-4">
+              {error && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email">Correo electrónico</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  {...loginForm.register("email")}
+                />
+                {loginForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  {...loginForm.register("password")}
+                />
+                {loginForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="rounded border-gray-300" />
-                Recordarme
-              </label>
-              <button className="text-sm text-primary hover:underline">
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
-          </div>
-          <DialogFooter className="flex-col gap-2 sm:flex-col">
-            <Button onClick={handleLogin} className="w-full">
-              Iniciar sesión
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              ¿No tienes cuenta?{" "}
-              <button
-                onClick={() => {
-                  setLoginOpen(false);
-                  setRegisterOpen(true);
-                }}
-                className="text-primary hover:underline"
-              >
-                Crear cuenta
-              </button>
-            </p>
-          </DialogFooter>
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Iniciando sesión...
+                  </>
+                ) : (
+                  "Iniciar sesión"
+                )}
+              </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                ¿No tienes cuenta?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginOpen(false);
+                    openRegisterDialog();
+                  }}
+                  className="text-primary hover:underline"
+                >
+                  Crear cuenta
+                </button>
+              </p>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -379,82 +464,87 @@ export function Navbar() {
               Regístrate para hacer pedidos y guardar tus favoritos
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={registerForm.handleSubmit(handleRegister)}>
+            <div className="grid gap-4 py-4">
+              {error && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
               <div className="space-y-2">
-                <Label htmlFor="firstName">Nombre</Label>
+                <Label htmlFor="name">Nombre completo</Label>
                 <Input
-                  id="firstName"
-                  placeholder="Juan"
+                  id="name"
+                  placeholder="Juan Pérez"
+                  {...registerForm.register("name")}
                 />
+                {registerForm.formState.errors.name && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.name.message}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Apellido</Label>
+                <Label htmlFor="registerEmail">Correo electrónico</Label>
                 <Input
-                  id="lastName"
-                  placeholder="Pérez"
+                  id="registerEmail"
+                  type="email"
+                  placeholder="tu@email.com"
+                  {...registerForm.register("email")}
                 />
+                {registerForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="3001234567"
+                  {...registerForm.register("phone")}
+                />
+                {registerForm.formState.errors.phone && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.phone.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="registerPassword">Contraseña</Label>
+                <Input
+                  id="registerPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  {...registerForm.register("password")}
+                />
+                {registerForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>
+                )}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="registerEmail">Correo electrónico</Label>
-              <Input
-                id="registerEmail"
-                type="email"
-                placeholder="tu@email.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="300 123 4567"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="registerPassword">Contraseña</Label>
-              <Input
-                id="registerPassword"
-                type="password"
-                placeholder="••••••••"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-              />
-            </div>
-            <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" className="mt-1 rounded border-gray-300" />
-              <span className="text-muted-foreground">
-                Acepto los{" "}
-                <button className="text-primary hover:underline">términos y condiciones</button>
-                {" "}y la{" "}
-                <button className="text-primary hover:underline">política de privacidad</button>
-              </span>
-            </label>
-          </div>
-          <DialogFooter className="flex-col gap-2 sm:flex-col">
-            <Button onClick={handleRegister} className="w-full">
-              Crear cuenta
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              ¿Ya tienes cuenta?{" "}
-              <button
-                onClick={() => {
-                  setRegisterOpen(false);
-                  setLoginOpen(true);
-                }}
-                className="text-primary hover:underline"
-              >
-                Iniciar sesión
-              </button>
-            </p>
-          </DialogFooter>
+            <DialogFooter className="flex-col gap-2 sm:flex-col">
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando cuenta...
+                  </>
+                ) : (
+                  "Crear cuenta"
+                )}
+              </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                ¿Ya tienes cuenta?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRegisterOpen(false);
+                    openLoginDialog();
+                  }}
+                  className="text-primary hover:underline"
+                >
+                  Iniciar sesión
+                </button>
+              </p>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>

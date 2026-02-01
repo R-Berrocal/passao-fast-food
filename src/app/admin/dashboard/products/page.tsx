@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
+import Link from "next/link";
 import {
   Plus,
   Search,
@@ -8,15 +9,15 @@ import {
   Pencil,
   Trash2,
   Image as ImageIcon,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
+  Loader2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -24,32 +25,27 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { menuData, formatPrice, MenuItem } from '@/data/menu';
+} from "@/components/ui/dropdown-menu";
+import { useProducts } from "@/hooks/use-products";
+import { useCategories } from "@/hooks/use-categories";
+import { formatPrice } from "@/stores/use-cart-store";
+import type { Product, Category } from "@/types/models";
 
-const allProducts = menuData.flatMap((category) => category.items);
-const categories = menuData.map((cat) => ({ id: cat.id, name: cat.name }));
+interface ProductWithCategory extends Product {
+  category: Pick<Category, "id" | "name" | "slug">;
+}
 
 function ProductCard({
   product,
-  onEdit,
   onDelete,
 }: {
-  product: MenuItem;
-  onEdit: () => void;
+  product: ProductWithCategory;
   onDelete: () => void;
 }) {
   return (
@@ -61,8 +57,18 @@ function ProductCard({
           className="h-full w-full object-cover"
         />
         <Badge className="absolute right-2 top-2 capitalize">
-          {product.category}
+          {product.category.name}
         </Badge>
+        {!product.isActive && (
+          <Badge variant="destructive" className="absolute left-2 top-2">
+            Inactivo
+          </Badge>
+        )}
+        {!product.isAvailable && product.isActive && (
+          <Badge variant="secondary" className="absolute left-2 top-2">
+            No disponible
+          </Badge>
+        )}
       </div>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
@@ -84,9 +90,11 @@ function ProductCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
+              <DropdownMenuItem asChild>
+                <Link href={`/admin/dashboard/products/${product.id}/edit`}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDelete}
@@ -104,35 +112,59 @@ function ProductCard({
 }
 
 export default function ProductsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductWithCategory | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const filteredProducts = allProducts.filter((product) => {
+  const { products, isLoading, deleteProduct } = useProducts();
+  const { categories, isLoading: categoriesLoading } = useCategories();
+
+  const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
-      activeCategory === 'all' || product.category === activeCategory;
+      activeCategory === "all" || product.categoryId === activeCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const handleEdit = (product: MenuItem) => {
-    setSelectedProduct(product);
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = (product: MenuItem) => {
+  const handleDelete = (product: ProductWithCategory) => {
     setSelectedProduct(product);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleCreateNew = () => {
-    setSelectedProduct(null);
-    setIsDialogOpen(true);
+  const confirmDelete = async () => {
+    if (!selectedProduct) return;
+    setIsDeleting(true);
+    const success = await deleteProduct(selectedProduct.id);
+    setIsDeleting(false);
+    if (success) {
+      setIsDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    }
   };
+
+  if (isLoading || categoriesLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="mt-2 h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Skeleton className="h-16 w-full" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-64 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -144,9 +176,11 @@ export default function ProductsPage() {
             Administra el menú de tu restaurante
           </p>
         </div>
-        <Button onClick={handleCreateNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Producto
+        <Button asChild>
+          <Link href="/admin/dashboard/products/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Producto
+          </Link>
         </Button>
       </div>
 
@@ -166,12 +200,11 @@ export default function ProductsPage() {
             <Tabs value={activeCategory} onValueChange={setActiveCategory}>
               <TabsList className="flex-wrap">
                 <TabsTrigger value="all">
-                  Todos ({allProducts.length})
+                  Todos ({products.length})
                 </TabsTrigger>
                 {categories.map((cat) => (
                   <TabsTrigger key={cat.id} value={cat.id}>
-                    {cat.name} (
-                    {allProducts.filter((p) => p.category === cat.id).length})
+                    {cat.name} ({products.filter((p) => p.categoryId === cat.id).length})
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -187,7 +220,6 @@ export default function ProductsPage() {
             <ProductCard
               key={product.id}
               product={product}
-              onEdit={() => handleEdit(product)}
               onDelete={() => handleDelete(product)}
             />
           ))}
@@ -199,92 +231,13 @@ export default function ProductsPage() {
               No se encontraron productos
             </h3>
             <p className="text-muted-foreground">
-              Intenta ajustar los filtros de búsqueda
+              {products.length === 0
+                ? "Crea tu primer producto para comenzar"
+                : "Intenta ajustar los filtros de búsqueda"}
             </p>
           </div>
         )}
       </ScrollArea>
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedProduct ? 'Editar Producto' : 'Nuevo Producto'}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedProduct
-                ? 'Modifica los detalles del producto'
-                : 'Completa los detalles del nuevo producto'}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre</Label>
-              <Input
-                id="name"
-                placeholder="Ej: Arepa Especial"
-                defaultValue={selectedProduct?.name || ''}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Precio</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  placeholder="15000"
-                  defaultValue={selectedProduct?.price || ''}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoría</Label>
-                <Select defaultValue={selectedProduct?.category || ''}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Descripción (opcional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe el producto..."
-                defaultValue={selectedProduct?.description || ''}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="image">URL de Imagen</Label>
-              <Input
-                id="image"
-                placeholder="https://..."
-                defaultValue={selectedProduct?.image || ''}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={() => setIsDialogOpen(false)}>
-              {selectedProduct ? 'Guardar Cambios' : 'Crear Producto'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -300,14 +253,23 @@ export default function ProductsPage() {
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
             >
               Cancelar
             </Button>
             <Button
               variant="destructive"
-              onClick={() => setIsDeleteDialogOpen(false)}
+              onClick={confirmDelete}
+              disabled={isDeleting}
             >
-              Eliminar
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

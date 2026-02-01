@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { MenuItem } from "@/data/menu";
+import { persist } from "zustand/middleware";
 
 export interface CartItemAddition {
   id: string;
@@ -7,7 +7,15 @@ export interface CartItemAddition {
   price: number;
 }
 
-export interface CartItem extends MenuItem {
+export interface CartProduct {
+  id: string;
+  name: string;
+  price: number;
+  description?: string | null;
+  image: string;
+}
+
+export interface CartItem extends CartProduct {
   quantity: number;
   cartItemId: string;
   additions: CartItemAddition[];
@@ -17,7 +25,7 @@ export interface CartItem extends MenuItem {
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
-  addItem: (item: MenuItem, additions?: CartItemAddition[]) => void;
+  addItem: (item: CartProduct, additions?: CartItemAddition[]) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -28,49 +36,57 @@ interface CartState {
 
 const generateCartItemId = () => `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-export const useCartStore = create<CartState>((set) => ({
-  items: [],
-  isOpen: false,
+export const useCartStore = create<CartState>()(
+  persist(
+    (set) => ({
+      items: [],
+      isOpen: false,
 
-  addItem: (item, additions = []) =>
-    set((state) => {
-      const additionsTotal = additions.reduce((sum, add) => sum + add.price, 0);
-      const totalPrice = item.price + additionsTotal;
+      addItem: (item, additions = []) =>
+        set((state) => {
+          const additionsTotal = additions.reduce((sum, add) => sum + add.price, 0);
+          const totalPrice = item.price + additionsTotal;
 
-      const newItem: CartItem = {
-        ...item,
-        cartItemId: generateCartItemId(),
-        quantity: 1,
-        additions,
-        totalPrice,
-      };
+          const newItem: CartItem = {
+            ...item,
+            cartItemId: generateCartItemId(),
+            quantity: 1,
+            additions,
+            totalPrice,
+          };
 
-      return { items: [...state.items, newItem] };
+          return { items: [...state.items, newItem] };
+        }),
+
+      removeItem: (cartItemId) =>
+        set((state) => ({
+          items: state.items.filter((i) => i.cartItemId !== cartItemId),
+        })),
+
+      updateQuantity: (cartItemId, quantity) =>
+        set((state) => {
+          if (quantity <= 0) {
+            return { items: state.items.filter((i) => i.cartItemId !== cartItemId) };
+          }
+          return {
+            items: state.items.map((i) =>
+              i.cartItemId === cartItemId ? { ...i, quantity } : i
+            ),
+          };
+        }),
+
+      clearCart: () => set({ items: [] }),
+
+      openCart: () => set({ isOpen: true }),
+      closeCart: () => set({ isOpen: false }),
+      toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
     }),
-
-  removeItem: (cartItemId) =>
-    set((state) => ({
-      items: state.items.filter((i) => i.cartItemId !== cartItemId),
-    })),
-
-  updateQuantity: (cartItemId, quantity) =>
-    set((state) => {
-      if (quantity <= 0) {
-        return { items: state.items.filter((i) => i.cartItemId !== cartItemId) };
-      }
-      return {
-        items: state.items.map((i) =>
-          i.cartItemId === cartItemId ? { ...i, quantity } : i
-        ),
-      };
-    }),
-
-  clearCart: () => set({ items: [] }),
-
-  openCart: () => set({ isOpen: true }),
-  closeCart: () => set({ isOpen: false }),
-  toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
-}));
+    {
+      name: "cart-storage",
+      partialize: (state) => ({ items: state.items }),
+    }
+  )
+);
 
 export const useCartTotal = () =>
   useCartStore((state) =>
@@ -81,3 +97,12 @@ export const useCartItemCount = () =>
   useCartStore((state) =>
     state.items.reduce((acc, item) => acc + item.quantity, 0)
   );
+
+export const formatPrice = (price: number): string => {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price);
+};

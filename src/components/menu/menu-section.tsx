@@ -1,13 +1,17 @@
-import { MenuCategory } from "@/data/menu";
+import type { Category, Product } from "@/types/models";
 import { MenuItem } from "./menu-item";
 
+interface CategoryWithProducts extends Category {
+  products: Product[];
+}
+
 interface MenuSectionProps {
-  category: MenuCategory;
+  category: CategoryWithProducts;
 }
 
 export function MenuSection({ category }: MenuSectionProps) {
   return (
-    <section id={category.id} className="scroll-mt-20">
+    <section id={category.slug} className="scroll-mt-20">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-primary md:text-3xl">
           {category.name}
@@ -16,8 +20,8 @@ export function MenuSection({ category }: MenuSectionProps) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {category.items.map((item) => (
-          <MenuItem key={item.id} item={item} />
+        {category.products.map((product) => (
+          <MenuItem key={product.id} product={product} />
         ))}
       </div>
     </section>
