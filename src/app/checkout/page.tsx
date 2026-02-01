@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, MapPin, Store, Loader2, CheckCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Store, Loader2, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -64,11 +64,38 @@ export default function CheckoutPage() {
     return `${hour12}:${minute} ${period}`;
   };
 
-  const getBusinessHoursText = () => {
-    if (!hours || hours.length === 0) return "Horario no disponible";
+  const getDayOfWeek = (): DayOfWeek => {
+    const days: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    return days[new Date().getDay()];
+  };
 
-    const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase() as DayOfWeek;
-    const todayHours = hours.find((h) => h.dayOfWeek === today);
+  const getTodayHours = () => {
+    if (!hours || hours.length === 0) return null;
+    const today = getDayOfWeek();
+    return hours.find((h) => h.dayOfWeek === today);
+  };
+
+  const isBusinessOpen = () => {
+    const todayHours = getTodayHours();
+
+    if (!todayHours || !todayHours.isOpen) {
+      return false;
+    }
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    const [openHour, openMinute] = (todayHours.openTime || "10:00").split(":").map(Number);
+    const [closeHour, closeMinute] = (todayHours.closeTime || "22:00").split(":").map(Number);
+
+    const openTime = openHour * 60 + openMinute;
+    const closeTime = closeHour * 60 + closeMinute;
+
+    return currentTime >= openTime && currentTime < closeTime;
+  };
+
+  const getBusinessHoursText = () => {
+    const todayHours = getTodayHours();
 
     if (!todayHours || !todayHours.isOpen) {
       return "Cerrado hoy";
@@ -76,6 +103,34 @@ export default function CheckoutPage() {
 
     return `${formatTime(todayHours.openTime || "10:00")} - ${formatTime(todayHours.closeTime || "22:00")}`;
   };
+
+  const getBusinessStatusMessage = () => {
+    const todayHours = getTodayHours();
+
+    if (!todayHours || !todayHours.isOpen) {
+      return "El negocio está cerrado hoy. Por favor, vuelve otro día.";
+    }
+
+    if (!isBusinessOpen()) {
+      const openTime = formatTime(todayHours.openTime || "10:00");
+      const closeTime = formatTime(todayHours.closeTime || "22:00");
+
+      const now = new Date();
+      const currentHour = now.getHours();
+      const [openHour] = (todayHours.openTime || "10:00").split(":").map(Number);
+
+      if (currentHour < openHour) {
+        return `Abrimos a las ${openTime}. Horario de hoy: ${openTime} - ${closeTime}`;
+      } else {
+        return `Ya cerramos por hoy. Horario: ${openTime} - ${closeTime}`;
+      }
+    }
+
+    return null;
+  };
+
+  const businessOpen = isBusinessOpen();
+  const businessStatusMessage = getBusinessStatusMessage();
 
   const deliveryForm = useForm<DeliveryFormData>({
     resolver: zodResolver(deliverySchema),
@@ -251,6 +306,26 @@ export default function CheckoutPage() {
           <h1 className="ml-4 text-xl font-bold">Finalizar Pedido</h1>
         </div>
       </header>
+
+      {!businessOpen && businessStatusMessage && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20">
+                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="font-medium text-amber-600 dark:text-amber-400">
+                  Estamos cerrados
+                </p>
+                <p className="text-sm text-amber-600/80 dark:text-amber-400/80">
+                  {businessStatusMessage}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
@@ -504,16 +579,37 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
+                    {!businessOpen && businessStatusMessage && (
+                      <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-sm">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="font-medium text-amber-600 dark:text-amber-400">
+                              Fuera de horario
+                            </p>
+                            <p className="text-amber-600/80 dark:text-amber-400/80 mt-1">
+                              {businessStatusMessage}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       className="w-full cursor-pointer"
                       size="lg"
-                      disabled={items.length === 0 || orderLoading || configLoading}
+                      disabled={items.length === 0 || orderLoading || configLoading || !businessOpen}
                       onClick={handleSubmit}
                     >
                       {orderLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Procesando...
+                        </>
+                      ) : !businessOpen ? (
+                        <>
+                          <Clock className="mr-2 h-4 w-4" />
+                          Cerrado
                         </>
                       ) : (
                         "Confirmar Pedido"
