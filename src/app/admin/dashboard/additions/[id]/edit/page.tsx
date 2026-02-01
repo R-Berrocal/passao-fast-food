@@ -211,7 +211,7 @@ export default function EditAdditionPage() {
                 <Button type="button" variant="outline" asChild className="flex-1">
                   <Link href="/admin/dashboard/additions">Cancelar</Link>
                 </Button>
-                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                <Button type="submit" className="flex-1 cursor-pointer" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

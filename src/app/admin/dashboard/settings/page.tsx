@@ -299,7 +299,7 @@ export default function SettingsPage() {
             </Card>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -394,7 +394,7 @@ export default function SettingsPage() {
             </Card>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -489,7 +489,7 @@ export default function SettingsPage() {
             </Card>
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -569,7 +569,7 @@ export default function SettingsPage() {
           </Card>
 
           <div className="flex justify-end">
-            <Button onClick={saveHours} disabled={isSavingHours}>
+            <Button onClick={saveHours} disabled={isSavingHours} className="cursor-pointer">
               {isSavingHours ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

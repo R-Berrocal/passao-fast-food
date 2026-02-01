@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, MapPin, Store, Loader2, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Store, Loader2, CheckCircle, Clock, AlertCircle, User, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,9 +14,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useCartStore, useCartTotal, formatPrice } from "@/stores/use-cart-store";
+import { useAuthStore } from "@/stores/use-auth-store";
 import { useBusinessConfig, useBusinessHours } from "@/hooks/use-business";
 import { useCreateOrder } from "@/hooks/use-orders";
+import { useUserAddresses } from "@/hooks/use-user-addresses";
 import { type DayOfWeek } from "@/types/models";
 
 const emailValidation = z
@@ -30,7 +33,9 @@ const deliverySchema = z.object({
   customerName: z.string().min(2, "El nombre es requerido"),
   customerPhone: z.string().min(10, "Número de teléfono inválido"),
   customerEmail: emailValidation,
-  deliveryAddress: z.string().min(5, "La dirección es requerida"),
+  street: z.string().min(5, "La dirección es requerida"),
+  neighborhood: z.string().min(2, "El barrio es requerido"),
+  addressDetails: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -55,6 +60,11 @@ export default function CheckoutPage() {
   const { config, isLoading: configLoading } = useBusinessConfig();
   const { hours } = useBusinessHours();
   const { createOrder, isLoading: orderLoading, error: orderError } = useCreateOrder();
+  const { user, isAuthenticated } = useAuthStore();
+  const { addresses, isLoading: addressesLoading, createAddress, getDefaultAddress } = useUserAddresses();
+
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [saveAddress, setSaveAddress] = useState(false);
 
   const formatTime = (time: string) => {
     const [hour, minute] = time.split(":");
@@ -138,7 +148,9 @@ export default function CheckoutPage() {
       customerName: "",
       customerPhone: "",
       customerEmail: "",
-      deliveryAddress: "",
+      street: "",
+      neighborhood: "",
+      addressDetails: "",
       notes: "",
     },
   });
@@ -156,6 +168,73 @@ export default function CheckoutPage() {
   const deliveryCost = orderType === "delivery" ? (config?.deliveryFee || 5000) : 0;
   const finalTotal = total + deliveryCost;
 
+  // Track if we've already initialized forms
+  const hasInitializedForms = useRef(false);
+
+  // Load user data and saved addresses - only once when data is ready
+  useEffect(() => {
+    if (hasInitializedForms.current || addressesLoading) return;
+
+    if (isAuthenticated && user) {
+      hasInitializedForms.current = true;
+      const defaultAddress = getDefaultAddress();
+
+      const deliveryData = {
+        customerName: user.name,
+        customerPhone: user.phone,
+        customerEmail: user.email,
+        street: defaultAddress?.street || "",
+        neighborhood: defaultAddress?.neighborhood || "",
+        addressDetails: defaultAddress?.details || "",
+        notes: "",
+      };
+      const pickupData = {
+        customerName: user.name,
+        customerPhone: user.phone,
+        customerEmail: user.email,
+        notes: "",
+      };
+      deliveryForm.reset(deliveryData);
+      pickupForm.reset(pickupData);
+
+      // Initialize saveAddress checkbox if user has saved addresses
+      if (addresses.length > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial sync from database
+        setSaveAddress(true);
+      }
+    }
+  }, [isAuthenticated, user, addresses, addressesLoading, deliveryForm, pickupForm, getDefaultAddress]);
+
+  const handleSaveAddressChange = (checked: boolean) => {
+    if (checked && !isAuthenticated) {
+      setShowLoginPrompt(true);
+    } else {
+      setSaveAddress(checked);
+    }
+  };
+
+  const saveUserAddress = async (formData: DeliveryFormData) => {
+    if (!saveAddress || !isAuthenticated || !user) return;
+
+    // Check if address already exists (by street and neighborhood)
+    const addressExists = addresses.some(
+      (addr) =>
+        addr.street.toLowerCase() === formData.street.toLowerCase() &&
+        addr.neighborhood.toLowerCase() === formData.neighborhood.toLowerCase()
+    );
+
+    if (addressExists) return;
+
+    await createAddress({
+      label: addresses.length === 0 ? "Casa" : "Dirección " + (addresses.length + 1),
+      street: formData.street,
+      neighborhood: formData.neighborhood,
+      city: config?.city || "Barranquilla",
+      details: formData.addressDetails || undefined,
+      isDefault: addresses.length === 0,
+    });
+  };
+
   const buildWhatsAppMessage = (orderNumber: string, formData: DeliveryFormData | PickupFormData) => {
     const lines: string[] = [
       `*NUEVO PEDIDO - ${orderNumber}*`,
@@ -171,8 +250,10 @@ export default function CheckoutPage() {
     lines.push("");
     lines.push(`*Tipo:* ${orderType === "delivery" ? "Domicilio" : "Recoger en local"}`);
 
-    if (orderType === "delivery" && "deliveryAddress" in formData) {
-      lines.push(`*Dirección:* ${formData.deliveryAddress}`);
+    if (orderType === "delivery" && "street" in formData) {
+      const addressParts = [formData.street, formData.neighborhood];
+      if (formData.addressDetails) addressParts.push(formData.addressDetails);
+      lines.push(`*Dirección:* ${addressParts.join(", ")}`);
     }
 
     lines.push("");
@@ -239,18 +320,32 @@ export default function CheckoutPage() {
       additions: item.additions.map((a) => ({ additionId: a.id })),
     }));
 
+    // Build delivery address from parts
+    let deliveryAddress: string | undefined;
+    if (orderType === "delivery") {
+      const df = formData as DeliveryFormData;
+      const addressParts = [df.street, df.neighborhood];
+      if (df.addressDetails) addressParts.push(df.addressDetails);
+      deliveryAddress = addressParts.join(", ");
+    }
+
     const order = await createOrder({
       customerName: formData.customerName,
       customerPhone: formData.customerPhone,
       customerEmail: formData.customerEmail || undefined,
       type: orderType,
-      deliveryAddress: orderType === "delivery" ? (formData as DeliveryFormData).deliveryAddress : undefined,
+      deliveryAddress,
       notes: formData.notes,
       paymentMethod,
       items: orderItems,
     });
 
     if (order) {
+      // Save address if checkbox is checked and it's a delivery order
+      if (orderType === "delivery") {
+        await saveUserAddress(formData as DeliveryFormData);
+      }
+
       const whatsappMessage = buildWhatsAppMessage(order.orderNumber, formData);
       openWhatsApp(whatsappMessage);
       setOrderSuccess({ orderNumber: order.orderNumber });
@@ -395,29 +490,106 @@ export default function CheckoutPage() {
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Dirección</Label>
-                      <Input
-                        id="address"
-                        placeholder="Calle, número, barrio"
-                        {...deliveryForm.register("deliveryAddress")}
-                      />
-                      {deliveryForm.formState.errors.deliveryAddress && (
-                        <p className="text-sm text-destructive">
-                          {deliveryForm.formState.errors.deliveryAddress.message}
-                        </p>
-                      )}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="street">Dirección *</Label>
+                        <Input
+                          id="street"
+                          placeholder="Calle 50 #30-20"
+                          {...deliveryForm.register("street")}
+                        />
+                        {deliveryForm.formState.errors.street && (
+                          <p className="text-sm text-destructive">
+                            {deliveryForm.formState.errors.street.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="neighborhood">Barrio *</Label>
+                        <Input
+                          id="neighborhood"
+                          placeholder="Ej: Boston, El Prado"
+                          {...deliveryForm.register("neighborhood")}
+                        />
+                        {deliveryForm.formState.errors.neighborhood && (
+                          <p className="text-sm text-destructive">
+                            {deliveryForm.formState.errors.neighborhood.message}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="notes">Notas adicionales (opcional)</Label>
+                      <Label htmlFor="addressDetails">Detalles adicionales (opcional)</Label>
+                      <Input
+                        id="addressDetails"
+                        placeholder="Apto, edificio, punto de referencia..."
+                        {...deliveryForm.register("addressDetails")}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notas del pedido (opcional)</Label>
                       <Textarea
                         id="notes"
-                        placeholder="Indicaciones para la entrega, referencias, etc."
+                        placeholder="Instrucciones especiales para tu pedido..."
                         rows={3}
                         {...deliveryForm.register("notes")}
                       />
                     </div>
+
+                    {/* Save info checkbox */}
+                    <div className="flex items-start space-x-3 pt-2">
+                      <Checkbox
+                        id="save-info-delivery"
+                        checked={saveAddress}
+                        onCheckedChange={handleSaveAddressChange}
+                        disabled={!isAuthenticated && saveAddress}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <label
+                          htmlFor="save-info-delivery"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          Guardar mi información para próximos pedidos
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          {isAuthenticated
+                            ? "Tu información se guardará de forma segura"
+                            : "Inicia sesión para guardar tu información"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Login prompt for non-authenticated users */}
+                    {showLoginPrompt && !isAuthenticated && (
+                      <Card className="border-primary/20 bg-primary/5">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium">Guarda tu información</h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Inicia sesión o crea una cuenta para guardar tu información y hacer pedidos más rápido.
+                              </p>
+                              <div className="flex gap-2 mt-3">
+                                <Button size="sm" variant="default" asChild>
+                                  <Link href="/?authRequired=true">
+                                    <LogIn className="mr-2 h-4 w-4" />
+                                    Iniciar sesión
+                                  </Link>
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => setShowLoginPrompt(false)}>
+                                  Ahora no
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="pickup" className="mt-6 space-y-4">
@@ -474,6 +646,59 @@ export default function CheckoutPage() {
                         {...pickupForm.register("notes")}
                       />
                     </div>
+
+                    {/* Save info checkbox */}
+                    <div className="flex items-start space-x-3 pt-2">
+                      <Checkbox
+                        id="save-info-pickup"
+                        checked={saveAddress}
+                        onCheckedChange={handleSaveAddressChange}
+                        disabled={!isAuthenticated && saveAddress}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <label
+                          htmlFor="save-info-pickup"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          Guardar mi información para próximos pedidos
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          {isAuthenticated
+                            ? "Tu información se guardará de forma segura"
+                            : "Inicia sesión para guardar tu información"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Login prompt for non-authenticated users */}
+                    {showLoginPrompt && !isAuthenticated && (
+                      <Card className="border-primary/20 bg-primary/5">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium">Guarda tu información</h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Inicia sesión o crea una cuenta para guardar tu información y hacer pedidos más rápido.
+                              </p>
+                              <div className="flex gap-2 mt-3">
+                                <Button size="sm" variant="default" asChild>
+                                  <Link href="/?authRequired=true">
+                                    <LogIn className="mr-2 h-4 w-4" />
+                                    Iniciar sesión
+                                  </Link>
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => setShowLoginPrompt(false)}>
+                                  Ahora no
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
                     <Card className="bg-muted">
                       <CardContent className="p-4">
