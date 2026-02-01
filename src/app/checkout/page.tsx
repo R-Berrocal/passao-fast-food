@@ -15,8 +15,9 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCartStore, useCartTotal, formatPrice } from "@/stores/use-cart-store";
-import { useBusinessConfig } from "@/hooks/use-business";
+import { useBusinessConfig, useBusinessHours } from "@/hooks/use-business";
 import { useCreateOrder } from "@/hooks/use-orders";
+import { type DayOfWeek } from "@/types/models";
 
 const emailValidation = z
   .string()
@@ -52,7 +53,29 @@ export default function CheckoutPage() {
   const [orderSuccess, setOrderSuccess] = useState<{ orderNumber: string } | null>(null);
 
   const { config, isLoading: configLoading } = useBusinessConfig();
+  const { hours } = useBusinessHours();
   const { createOrder, isLoading: orderLoading, error: orderError } = useCreateOrder();
+
+  const formatTime = (time: string) => {
+    const [hour, minute] = time.split(":");
+    const h = parseInt(hour, 10);
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${minute} ${period}`;
+  };
+
+  const getBusinessHoursText = () => {
+    if (!hours || hours.length === 0) return "Horario no disponible";
+
+    const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase() as DayOfWeek;
+    const todayHours = hours.find((h) => h.dayOfWeek === today);
+
+    if (!todayHours || !todayHours.isOpen) {
+      return "Cerrado hoy";
+    }
+
+    return `${formatTime(todayHours.openTime || "10:00")} - ${formatTime(todayHours.closeTime || "22:00")}`;
+  };
 
   const deliveryForm = useForm<DeliveryFormData>({
     resolver: zodResolver(deliverySchema),
@@ -138,8 +161,9 @@ export default function CheckoutPage() {
   };
 
   const openWhatsApp = (message: string) => {
+    const whatsappNumber = config?.whatsappNumber || "573014483308";
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/573014483308?text=${encodedMessage}`;
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
   };
 
@@ -241,11 +265,11 @@ export default function CheckoutPage() {
                   onValueChange={(v) => setOrderType(v as "delivery" | "pickup")}
                 >
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="delivery" className="gap-2">
+                    <TabsTrigger value="delivery" className="gap-2 cursor-pointer">
                       <MapPin className="h-4 w-4" />
                       Domicilio
                     </TabsTrigger>
-                    <TabsTrigger value="pickup" className="gap-2">
+                    <TabsTrigger value="pickup" className="gap-2 cursor-pointer">
                       <Store className="h-4 w-4" />
                       Recoger
                     </TabsTrigger>
@@ -380,10 +404,10 @@ export default function CheckoutPage() {
                       <CardContent className="p-4">
                         <h4 className="font-semibold">Dirección del local</h4>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          {config?.address || "Barranquilla, Colombia"}
+                          {config?.address ? `${config.address}, ${config.city}` : "Barranquilla, Colombia"}
                         </p>
                         <p className="mt-2 text-sm text-muted-foreground">
-                          Horario: 5:00 PM - 11:00 PM
+                          Horario hoy: {getBusinessHoursText()}
                         </p>
                       </CardContent>
                     </Card>

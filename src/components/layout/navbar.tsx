@@ -53,6 +53,7 @@ import { useCartStore, useCartItemCount } from "@/stores/use-cart-store";
 import { Cart } from "@/components/cart/cart";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useBusinessConfig } from "@/hooks/use-business";
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from "@/lib/validations/auth";
 
 export function Navbar() {
@@ -67,6 +68,10 @@ export function Navbar() {
   const [authMessage, setAuthMessage] = useState<string | null>(null);
 
   const { user, isAuthenticated, isLoading, isSubmitting, error, login, register, logout, clearError } = useAuth();
+  const { config } = useBusinessConfig();
+
+  const businessName = config?.name || "PASSAO";
+  const logoUrl = config?.logoUrl;
 
   const hasProcessedParams = useRef(false);
 
@@ -168,10 +173,14 @@ export function Navbar() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 dark:bg-primary">
-                <span className="text-lg font-bold text-white dark:text-primary-foreground">P</span>
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 dark:bg-primary overflow-hidden">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={`Logo ${businessName}`} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-lg font-bold text-white dark:text-primary-foreground">{businessName.charAt(0)}</span>
+                )}
               </div>
-              <span className="text-xl font-bold text-zinc-900 dark:text-primary">PASSAO</span>
+              <span className="text-xl font-bold text-zinc-900 dark:text-primary">{businessName}</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-6">
@@ -216,7 +225,7 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="hidden sm:flex items-center gap-2 text-zinc-800 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
+                    className="hidden sm:flex items-center gap-2 text-zinc-800 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 dark:bg-primary text-white dark:text-primary-foreground font-semibold text-sm">
                       {user ? getInitials(user.name) : "?"}
@@ -268,7 +277,7 @@ export function Navbar() {
               size="icon"
               onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
               aria-label="Toggle theme"
-              className="text-zinc-800 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10"
+              className="text-zinc-800 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
               suppressHydrationWarning
             >
               <Sun className="h-5 w-5 hidden dark:block" />
@@ -277,8 +286,8 @@ export function Navbar() {
 
             <Sheet open={isOpen} onOpenChange={(open) => (open ? openCart() : closeCart())}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative text-zinc-800 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10">
-                  <ShoppingCart className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="relative text-zinc-800 dark:text-gray-300 hover:text-zinc-900 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer">
+                  <ShoppingCart className="h-5 w-5 " />
                   {itemCount > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 dark:bg-primary text-xs font-bold text-white dark:text-primary-foreground">
                       {itemCount}
@@ -300,10 +309,14 @@ export function Navbar() {
               <SheetContent side="left" className="w-72">
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
-                      <span className="text-sm font-bold text-primary-foreground">P</span>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary overflow-hidden">
+                      {logoUrl ? (
+                        <img src={logoUrl} alt={`Logo ${businessName}`} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-bold text-primary-foreground">{businessName.charAt(0)}</span>
+                      )}
                     </div>
-                    <span className="text-primary">PASSAO</span>
+                    <span className="text-primary">{businessName}</span>
                   </SheetTitle>
                 </SheetHeader>
 
@@ -384,7 +397,7 @@ export function Navbar() {
                       <Link
                         href="#"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                        className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-foreground transition-colors hover:bg-primary/10 hover:text-primary cursor"
                       >
                         <User className="h-5 w-5" />
                         Mi Perfil
