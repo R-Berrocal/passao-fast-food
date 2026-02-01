@@ -16,6 +16,7 @@ import {
   Moon,
   Sun,
   CirclePlus,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -153,6 +154,13 @@ export default function DashboardLayout({
 
           {/* Bottom section */}
           <div className="p-3 space-y-1">
+            <Link
+              href="/"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              <ExternalLink className="h-5 w-5" />
+              Ver Sitio
+            </Link>
             <button
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
