@@ -6,7 +6,8 @@
       "Bash(npx shadcn@latest add button card sheet dialog input label badge tabs scroll-area separator dropdown-menu radio-group textarea -y)",
       "Bash(npm run build:*)",
       "Bash(npx tsx:*)",
-      "Bash(npm run db:seed:*)"
+      "Bash(npm run db:seed:*)",
+      "Bash(npm run lint:*)"
     ]
   }
 }

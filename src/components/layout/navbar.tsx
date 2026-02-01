@@ -264,7 +264,7 @@ export function Navbar() {
                     Configuración
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     Cerrar sesión
                   </DropdownMenuItem>
@@ -423,7 +423,7 @@ export function Navbar() {
                           handleLogout();
                           setMobileMenuOpen(false);
                         }}
-                        className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-destructive transition-colors hover:bg-destructive/10"
+                        className="flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-destructive transition-colors hover:bg-destructive/10 cursor-pointer"
                       >
                         <LogOut className="h-5 w-5" />
                         Cerrar sesión

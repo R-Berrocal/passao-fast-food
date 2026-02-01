@@ -84,13 +84,13 @@ function ProductCard({
             </p>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild className="cursor-pointer">
               <Button variant="ghost" size="icon">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild className="cursor-pointer">
                 <Link href={`/admin/dashboard/products/${product.id}/edit`}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Editar
@@ -98,7 +98,7 @@ function ProductCard({
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDelete}
-                className="text-destructive focus:text-destructive"
+                className="text-destructive focus:text-destructive cursor-pointer"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Eliminar
@@ -254,6 +254,7 @@ export default function ProductsPage() {
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
               disabled={isDeleting}
+              className="cursor-pointer"
             >
               Cancelar
             </Button>
@@ -261,6 +262,7 @@ export default function ProductsPage() {
               variant="destructive"
               onClick={confirmDelete}
               disabled={isDeleting}
+              className="cursor-pointer"
             >
               {isDeleting ? (
                 <>
