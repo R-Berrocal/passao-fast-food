@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Plus, Minus } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,24 +12,27 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MenuItem, adiciones, formatPrice } from "@/data/menu";
-import { useCartStore, CartItemAddition } from "@/stores/use-cart-store";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAdditions } from "@/hooks/use-additions";
+import { useCartStore, CartItemAddition, formatPrice } from "@/stores/use-cart-store";
 import { cn } from "@/lib/utils";
+import type { Product } from "@/types/models";
 
 interface AddToCartDialogProps {
-  item: MenuItem | null;
+  product: Product | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AddToCartDialog({ item, open, onOpenChange }: AddToCartDialogProps) {
+export function AddToCartDialog({ product, open, onOpenChange }: AddToCartDialogProps) {
   const [selectedAdditions, setSelectedAdditions] = useState<CartItemAddition[]>([]);
+  const { additions, isLoading } = useAdditions();
   const addItem = useCartStore((state) => state.addItem);
   const openCart = useCartStore((state) => state.openCart);
 
-  if (!item) return null;
+  if (!product) return null;
 
-  const toggleAddition = (addition: typeof adiciones[0]) => {
+  const toggleAddition = (addition: { id: string; name: string; price: number }) => {
     setSelectedAdditions((prev) => {
       const exists = prev.find((a) => a.id === addition.id);
       if (exists) {
@@ -40,10 +43,19 @@ export function AddToCartDialog({ item, open, onOpenChange }: AddToCartDialogPro
   };
 
   const additionsTotal = selectedAdditions.reduce((sum, add) => sum + add.price, 0);
-  const totalPrice = item.price + additionsTotal;
+  const totalPrice = product.price + additionsTotal;
 
   const handleAddToCart = () => {
-    addItem(item, selectedAdditions);
+    addItem(
+      {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        description: product.description,
+        image: product.image,
+      },
+      selectedAdditions
+    );
     setSelectedAdditions([]);
     onOpenChange(false);
     openCart();
@@ -58,16 +70,16 @@ export function AddToCartDialog({ item, open, onOpenChange }: AddToCartDialogPro
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">{item.name}</DialogTitle>
-          {item.description && (
-            <p className="text-sm text-muted-foreground">{item.description}</p>
+          <DialogTitle className="text-xl">{product.name}</DialogTitle>
+          {product.description && (
+            <p className="text-sm text-muted-foreground">{product.description}</p>
           )}
         </DialogHeader>
 
         <div className="py-2">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Precio base</span>
-            <span className="font-semibold">{formatPrice(item.price)}</span>
+            <span className="font-semibold">{formatPrice(product.price)}</span>
           </div>
         </div>
 
@@ -76,42 +88,50 @@ export function AddToCartDialog({ item, open, onOpenChange }: AddToCartDialogPro
         <div className="py-2">
           <h4 className="mb-3 font-semibold">Adiciones (opcional)</h4>
           <ScrollArea className="h-[200px] pr-4">
-            <div className="space-y-2">
-              {adiciones.map((addition) => {
-                const isSelected = selectedAdditions.some((a) => a.id === addition.id);
-                return (
-                  <button
-                    key={addition.id}
-                    onClick={() => toggleAddition(addition)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-lg border p-3 text-left transition-all",
-                      isSelected
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all",
-                          isSelected
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-muted-foreground"
-                        )}
-                      >
-                        {isSelected && <Check className="h-3 w-3" />}
+            {isLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-14 w-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {additions.map((addition) => {
+                  const isSelected = selectedAdditions.some((a) => a.id === addition.id);
+                  return (
+                    <button
+                      key={addition.id}
+                      onClick={() => toggleAddition(addition)}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-lg border p-3 text-left transition-all",
+                        isSelected
+                          ? "border-primary bg-primary/10"
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-muted-foreground"
+                          )}
+                        >
+                          {isSelected && <Check className="h-3 w-3" />}
+                        </div>
+                        <span className={cn(isSelected && "font-medium")}>
+                          {addition.name}
+                        </span>
                       </div>
-                      <span className={cn(isSelected && "font-medium")}>
-                        {addition.name}
+                      <span className="text-sm text-muted-foreground">
+                        +{formatPrice(addition.price)}
                       </span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      +{formatPrice(addition.price)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </ScrollArea>
         </div>
 

@@ -1,0 +1,315 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  admin
+  staff
+  customer
+}
+
+enum UserStatus {
+  active
+  inactive
+  banned
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  preparing
+  ready
+  delivered
+  cancelled
+}
+
+enum OrderType {
+  delivery
+  pickup
+}
+
+enum PaymentMethod {
+  cash
+  nequi
+  daviplata
+  transfer
+}
+
+enum PaymentStatus {
+  pending
+  confirmed
+  rejected
+}
+
+enum DayOfWeek {
+  monday
+  tuesday
+  wednesday
+  thursday
+  friday
+  saturday
+  sunday
+}
+
+// ============================================================================
+// USER & AUTH
+// ============================================================================
+
+model User {
+  id        String     @id @default(cuid())
+  name      String
+  email     String     @unique
+  phone     String
+  password  String?    // Hashed, null para usuarios creados por admin
+  role      UserRole   @default(customer)
+  status    UserStatus @default(active)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  addresses Address[]
+  orders    Order[]
+
+  @@map("users")
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  userId       String
+  label        String   // "Casa", "Trabajo", etc.
+  street       String   // "Calle 45 #23-12"
+  neighborhood String   // "El Prado"
+  city         String   @default("Barranquilla")
+  details      String?  // "Apto 301, edificio azul"
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@map("addresses")
+}
+
+// ============================================================================
+// PRODUCTS
+// ============================================================================
+
+model Category {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique // "arepas", "perros", etc.
+  description  String?
+  image        String?
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  categoryId   String
+  name         String
+  description  String?
+  price        Int      // En pesos colombianos (sin decimales)
+  image        String
+  isActive     Boolean  @default(true) // Para desactivar sin eliminar
+  isAvailable  Boolean  @default(true) // Disponibilidad temporal
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Addition {
+  id           String   @id @default(cuid())
+  name         String
+  price        Int
+  image        String?
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderItemAdditions OrderItemAddition[]
+
+  @@map("additions")
+}
+
+// ============================================================================
+// ORDERS
+// ============================================================================
+
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique // "ORD-001", auto-generated
+
+  // Cliente (opcional para invitados)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Datos del cliente (siempre requeridos)
+  customerName  String
+  customerPhone String
+  customerEmail String?
+
+  // Entrega
+  type            OrderType
+  addressId       String? // Solo para delivery de usuarios registrados
+  address         Address? @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  deliveryAddress String?  // Dirección completa como texto
+
+  // Totales (en pesos colombianos)
+  subtotal    Int
+  deliveryFee Int     @default(0)
+  discount    Int     @default(0)
+  total       Int
+
+  // Estado
+  status     OrderStatus @default(pending)
+  notes      String?     // Notas del cliente
+  adminNotes String?     // Notas internas
+
+  // Pago
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentStatus @default(pending)
+  paymentReference String?       // Referencia de transferencia/Nequi
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  confirmedAt DateTime?
+  preparingAt DateTime?
+  readyAt     DateTime?
+  deliveredAt DateTime?
+  cancelledAt DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  items OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String @id @default(cuid())
+  orderId     String
+  productId   String
+  productName String // Snapshot del nombre
+  quantity    Int
+  unitPrice   Int    // Precio unitario al momento de la orden
+  totalPrice  Int    // unitPrice * quantity + additions
+  createdAt   DateTime @default(now())
+
+  order    Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product  Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  additions OrderItemAddition[]
+
+  @@map("order_items")
+}
+
+model OrderItemAddition {
+  id           String @id @default(cuid())
+  orderItemId  String
+  additionId   String
+  additionName String // Snapshot del nombre
+  price        Int    // Precio al momento de la orden
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  addition  Addition  @relation(fields: [additionId], references: [id], onDelete: Restrict)
+
+  @@map("order_item_additions")
+}
+
+// ============================================================================
+// BUSINESS CONFIG
+// ============================================================================
+
+model BusinessHours {
+  id        String    @id @default(cuid())
+  dayOfWeek DayOfWeek @unique
+  isOpen    Boolean   @default(true)
+  openTime  String?   // "10:00" (HH:mm)
+  closeTime String?   // "22:00" (HH:mm)
+
+  @@map("business_hours")
+}
+
+model BusinessConfig {
+  id    String @id @default("default")
+  name  String @default("PASSAO")
+  phone String @default("")
+  email String @default("")
+  address String @default("")
+  city    String @default("Barranquilla")
+
+  // Delivery
+  deliveryFee    Int @default(0)
+  minOrderAmount Int @default(0)
+
+  // Datos de pago - Nequi/Daviplata
+  nequiNumber    String?
+  daviplataNumber String?
+
+  // Datos de pago - Transferencia bancaria
+  bankName          String?
+  bankAccountNumber String?
+  bankAccountType   String? // "Ahorros" | "Corriente"
+  bankAccountHolder String?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("business_config")
+}
+
+// ============================================================================
+// ANALYTICS
+// ============================================================================
+
+model DailySales {
+  id               String   @id @default(cuid())
+  date             DateTime @unique @db.Date
+  totalOrders      Int      @default(0)
+  totalRevenue     Int      @default(0)
+  deliveryOrders   Int      @default(0)
+  pickupOrders     Int      @default(0)
+  cancelledOrders  Int      @default(0)
+  averageOrderValue Int     @default(0)
+
+  @@index([date])
+  @@map("daily_sales")
+}
+
+model ProductSales {
+  id           String   @id @default(cuid())
+  productId    String
+  productName  String   // Snapshot por si el producto cambia
+  date         DateTime @db.Date
+  quantitySold Int      @default(0)
+  revenue      Int      @default(0)
+
+  @@unique([productId, date])
+  @@index([date])
+  @@index([productId])
+  @@map("product_sales")
+}

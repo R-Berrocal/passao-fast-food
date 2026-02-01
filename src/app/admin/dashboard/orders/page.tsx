@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Search,
-  Filter,
   Eye,
   Clock,
   MapPin,
@@ -13,6 +12,7 @@ import {
   Truck,
   CheckCircle2,
   Package,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -34,55 +35,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  mockOrders,
-  getStatusColor,
-  getStatusText,
-  Order,
-} from "@/data/orders";
-import { formatPrice } from "@/data/menu";
+import { useOrders } from "@/hooks/use-orders";
+import { formatPrice } from "@/stores/use-cart-store";
+import { ORDER_STATUS_CONFIG, type OrderStatus } from "@/types/models";
 
-const orderStats = {
-  pending: mockOrders.filter((o) => o.status === "pending").length,
-  preparing: mockOrders.filter((o) => o.status === "preparing").length,
-  ready: mockOrders.filter((o) => o.status === "ready").length,
-  delivered: mockOrders.filter((o) => o.status === "delivered").length,
-};
-
-function StatusIcon({ status }: { status: Order["status"] }) {
+function StatusIcon({ status }: { status: OrderStatus }) {
   switch (status) {
     case "pending":
       return <Clock className="h-4 w-4" />;
+    case "confirmed":
+      return <CheckCircle2 className="h-4 w-4" />;
     case "preparing":
       return <ChefHat className="h-4 w-4" />;
     case "ready":
       return <Package className="h-4 w-4" />;
     case "delivered":
-      return <CheckCircle2 className="h-4 w-4" />;
+      return <Truck className="h-4 w-4" />;
+    case "cancelled":
+      return <XCircle className="h-4 w-4" />;
   }
+}
+
+interface OrderWithItems {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string | null;
+  type: "delivery" | "pickup";
+  deliveryAddress?: string | null;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  status: OrderStatus;
+  notes?: string | null;
+  paymentMethod: string;
+  createdAt: Date | string;
+  items: {
+    id: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    additions: { additionName: string; price: number }[];
+  }[];
 }
 
 function OrderCard({
   order,
   onView,
+  onStatusChange,
+  isUpdating,
 }: {
-  order: Order;
+  order: OrderWithItems;
   onView: () => void;
+  onStatusChange: (status: OrderStatus) => void;
+  isUpdating: boolean;
 }) {
-  const getNextAction = () => {
-    switch (order.status) {
-      case "pending":
-        return { label: "Preparar", variant: "default" as const };
-      case "preparing":
-        return { label: "Listo", variant: "default" as const };
-      case "ready":
-        return { label: "Entregar", variant: "default" as const };
-      default:
-        return null;
-    }
-  };
-
-  const action = getNextAction();
+  const statusConfig = ORDER_STATUS_CONFIG[order.status];
 
   return (
     <Card className="overflow-hidden">
@@ -90,13 +100,13 @@ function OrderCard({
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-3">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${getStatusColor(order.status)}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${statusConfig.color} text-white`}
             >
               <StatusIcon status={order.status} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold">{order.id}</span>
+                <span className="font-semibold">{order.orderNumber}</span>
                 <Badge variant="outline" className="capitalize">
                   {order.type === "delivery" ? "Domicilio" : "Recoger"}
                 </Badge>
@@ -111,11 +121,8 @@ function OrderCard({
               </p>
             </div>
           </div>
-          <Badge
-            variant="secondary"
-            className={`${getStatusColor(order.status)} text-white`}
-          >
-            {getStatusText(order.status)}
+          <Badge variant="secondary" className={`${statusConfig.color} text-white`}>
+            {statusConfig.text}
           </Badge>
         </div>
 
@@ -128,10 +135,10 @@ function OrderCard({
             <Phone className="h-4 w-4" />
             <span>{order.customerPhone}</span>
           </div>
-          {order.address && (
+          {order.deliveryAddress && (
             <div className="mt-1 flex items-start gap-2 text-sm text-muted-foreground">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-              <span className="line-clamp-1">{order.address}</span>
+              <span className="line-clamp-1">{order.deliveryAddress}</span>
             </div>
           )}
         </div>
@@ -143,13 +150,13 @@ function OrderCard({
             {order.items.length} productos
           </p>
           <div className="mt-2 space-y-1">
-            {order.items.slice(0, 3).map((item, idx) => (
-              <div key={idx} className="flex justify-between text-sm">
+            {order.items.slice(0, 3).map((item) => (
+              <div key={item.id} className="flex justify-between text-sm">
                 <span>
-                  {item.quantity}x {item.name}
+                  {item.quantity}x {item.productName}
                 </span>
                 <span className="text-muted-foreground">
-                  {formatPrice(item.price * item.quantity)}
+                  {formatPrice(item.totalPrice)}
                 </span>
               </div>
             ))}
@@ -175,10 +182,24 @@ function OrderCard({
               <Eye className="mr-2 h-4 w-4" />
               Ver
             </Button>
-            {action && (
-              <Button size="sm">
-                {action.label}
-              </Button>
+            {order.status !== "delivered" && order.status !== "cancelled" && (
+              <Select
+                value={order.status}
+                onValueChange={(value) => onStatusChange(value as OrderStatus)}
+                disabled={isUpdating}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="confirmed">Confirmado</SelectItem>
+                  <SelectItem value="preparing">Preparando</SelectItem>
+                  <SelectItem value="ready">Listo</SelectItem>
+                  <SelectItem value="delivered">Entregado</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
             )}
           </div>
         </div>
@@ -190,22 +211,62 @@ function OrderCard({
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStatus, setActiveStatus] = useState("all");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
-  const filteredOrders = mockOrders.filter((order) => {
+  const { orders, isLoading, updateOrderStatus } = useOrders();
+
+  const orderStats = {
+    pending: orders.filter((o) => o.status === "pending").length,
+    preparing: orders.filter((o) => o.status === "preparing").length,
+    ready: orders.filter((o) => o.status === "ready").length,
+    delivered: orders.filter((o) => o.status === "delivered").length,
+  };
+
+  const filteredOrders = orders.filter((order) => {
     const matchesSearch =
-      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.customerName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       activeStatus === "all" || order.status === activeStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const handleViewOrder = (order: Order) => {
+  const handleViewOrder = (order: OrderWithItems) => {
     setSelectedOrder(order);
     setIsDetailOpen(true);
   };
+
+  const handleStatusChange = async (orderId: string, status: OrderStatus) => {
+    setUpdatingOrderId(orderId);
+    await updateOrderStatus(orderId, status);
+    setUpdatingOrderId(null);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="mt-2 h-4 w-64" />
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-16" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-80" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -285,9 +346,7 @@ export default function OrdersPage() {
             </div>
             <Tabs value={activeStatus} onValueChange={setActiveStatus}>
               <TabsList>
-                <TabsTrigger value="all">
-                  Todos ({mockOrders.length})
-                </TabsTrigger>
+                <TabsTrigger value="all">Todos ({orders.length})</TabsTrigger>
                 <TabsTrigger value="pending">
                   Pendientes ({orderStats.pending})
                 </TabsTrigger>
@@ -309,8 +368,10 @@ export default function OrdersPage() {
           {filteredOrders.map((order) => (
             <OrderCard
               key={order.id}
-              order={order}
-              onView={() => handleViewOrder(order)}
+              order={order as OrderWithItems}
+              onView={() => handleViewOrder(order as OrderWithItems)}
+              onStatusChange={(status) => handleStatusChange(order.id, status)}
+              isUpdating={updatingOrderId === order.id}
             />
           ))}
         </div>
@@ -321,7 +382,9 @@ export default function OrdersPage() {
               No se encontraron órdenes
             </h3>
             <p className="text-muted-foreground">
-              Intenta ajustar los filtros de búsqueda
+              {orders.length === 0
+                ? "No hay órdenes registradas todavía"
+                : "Intenta ajustar los filtros de búsqueda"}
             </p>
           </div>
         )}
@@ -332,13 +395,13 @@ export default function OrdersPage() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              Orden {selectedOrder?.id}
+              Orden {selectedOrder?.orderNumber}
               {selectedOrder && (
                 <Badge
                   variant="secondary"
-                  className={`${getStatusColor(selectedOrder.status)} text-white`}
+                  className={`${ORDER_STATUS_CONFIG[selectedOrder.status].color} text-white`}
                 >
-                  {getStatusText(selectedOrder.status)}
+                  {ORDER_STATUS_CONFIG[selectedOrder.status].text}
                 </Badge>
               )}
             </DialogTitle>
@@ -362,10 +425,10 @@ export default function OrdersPage() {
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{selectedOrder.customerPhone}</span>
                   </div>
-                  {selectedOrder.address && (
+                  {selectedOrder.deliveryAddress && (
                     <div className="flex items-start gap-2">
                       <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                      <span>{selectedOrder.address}</span>
+                      <span>{selectedOrder.deliveryAddress}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
@@ -386,24 +449,44 @@ export default function OrdersPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {selectedOrder.items.map((item, idx) => (
+                    {selectedOrder.items.map((item) => (
                       <div
-                        key={idx}
+                        key={item.id}
                         className="flex items-center justify-between"
                       >
                         <div className="flex items-center gap-2">
                           <span className="flex h-6 w-6 items-center justify-center rounded bg-muted text-xs font-medium">
                             {item.quantity}
                           </span>
-                          <span>{item.name}</span>
+                          <div>
+                            <span>{item.productName}</span>
+                            {item.additions.length > 0 && (
+                              <p className="text-xs text-muted-foreground">
+                                + {item.additions.map((a) => a.additionName).join(", ")}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <span className="font-medium">
-                          {formatPrice(item.price * item.quantity)}
+                          {formatPrice(item.totalPrice)}
                         </span>
                       </div>
                     ))}
                   </div>
                   <Separator className="my-4" />
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>{formatPrice(selectedOrder.subtotal)}</span>
+                    </div>
+                    {selectedOrder.deliveryFee > 0 && (
+                      <div className="flex justify-between">
+                        <span>Domicilio</span>
+                        <span>{formatPrice(selectedOrder.deliveryFee)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <Separator className="my-2" />
                   <div className="flex items-center justify-between text-lg font-bold">
                     <span>Total</span>
                     <span className="text-primary">
@@ -413,21 +496,16 @@ export default function OrdersPage() {
                 </CardContent>
               </Card>
 
-              {/* Actions */}
-              <div className="flex gap-2">
-                <Select defaultValue={selectedOrder.status}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pendiente</SelectItem>
-                    <SelectItem value="preparing">Preparando</SelectItem>
-                    <SelectItem value="ready">Listo</SelectItem>
-                    <SelectItem value="delivered">Entregado</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button className="flex-1">Actualizar Estado</Button>
-              </div>
+              {selectedOrder.notes && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Notas del cliente</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{selectedOrder.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </DialogContent>

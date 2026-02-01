@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Search,
-  Plus,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -15,15 +15,15 @@ import {
   Shield,
   UserCog,
   User as UserIcon,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -40,13 +40,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -55,25 +48,62 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  mockUsers,
-  getRoleColor,
-  getRoleText,
-  getStatusColor,
-  getStatusText,
-  User,
-} from "@/data/users";
-import { formatPrice } from "@/data/menu";
+import { useUsers } from "@/hooks/use-users";
+import type { UserRole, UserStatus } from "@/types/models";
 
-const userStats = {
-  total: mockUsers.length,
-  customers: mockUsers.filter((u) => u.role === "customer").length,
-  staff: mockUsers.filter((u) => u.role === "staff").length,
-  admins: mockUsers.filter((u) => u.role === "admin").length,
-  active: mockUsers.filter((u) => u.status === "active").length,
-};
+interface UserWithCount {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: UserRole;
+  status: UserStatus;
+  createdAt: Date | string;
+  _count: {
+    orders: number;
+  };
+}
 
-function RoleIcon({ role }: { role: User["role"] }) {
+function getRoleColor(role: UserRole): string {
+  switch (role) {
+    case "admin":
+      return "bg-purple-500";
+    case "staff":
+      return "bg-blue-500";
+    case "customer":
+      return "bg-green-500";
+    default:
+      return "bg-gray-500";
+  }
+}
+
+function getRoleText(role: UserRole): string {
+  switch (role) {
+    case "admin":
+      return "Administrador";
+    case "staff":
+      return "Personal";
+    case "customer":
+      return "Cliente";
+    default:
+      return role;
+  }
+}
+
+function getStatusText(status: UserStatus): string {
+  switch (status) {
+    case "active":
+      return "Activo";
+    case "inactive":
+      return "Inactivo";
+    case "banned":
+      return "Bloqueado";
+    default:
+      return status;
+  }
+}
+
+function RoleIcon({ role }: { role: UserRole }) {
   switch (role) {
     case "admin":
       return <Shield className="h-4 w-4" />;
@@ -87,12 +117,22 @@ function RoleIcon({ role }: { role: User["role"] }) {
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeRole, setActiveRole] = useState("all");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserWithCount | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const filteredUsers = mockUsers.filter((user) => {
+  const { users, isLoading, deleteUser } = useUsers();
+
+  const userStats = {
+    total: users.length,
+    customers: users.filter((u) => u.role === "customer").length,
+    staff: users.filter((u) => u.role === "staff").length,
+    admins: users.filter((u) => u.role === "admin").length,
+    active: users.filter((u) => u.status === "active").length,
+  };
+
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
@@ -100,24 +140,25 @@ export default function UsersPage() {
     return matchesSearch && matchesRole;
   });
 
-  const handleEdit = (user: User) => {
-    setSelectedUser(user);
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = (user: User) => {
+  const handleDelete = (user: UserWithCount) => {
     setSelectedUser(user);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleView = (user: User) => {
+  const handleView = (user: UserWithCount) => {
     setSelectedUser(user);
     setIsDetailOpen(true);
   };
 
-  const handleCreateNew = () => {
-    setSelectedUser(null);
-    setIsDialogOpen(true);
+  const confirmDelete = async () => {
+    if (!selectedUser) return;
+    setIsDeleting(true);
+    const success = await deleteUser(selectedUser.id);
+    setIsDeleting(false);
+    if (success) {
+      setIsDeleteDialogOpen(false);
+      setSelectedUser(null);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -129,6 +170,27 @@ export default function UsersPage() {
       .slice(0, 2);
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="mt-2 h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -139,9 +201,11 @@ export default function UsersPage() {
             Administra clientes y personal del restaurante
           </p>
         </div>
-        <Button onClick={handleCreateNew}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Nuevo Usuario
+        <Button asChild>
+          <Link href="/admin/dashboard/users/new">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Nuevo Usuario
+          </Link>
         </Button>
       </div>
 
@@ -239,7 +303,6 @@ export default function UsersPage() {
                   <TableHead>Rol</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Pedidos</TableHead>
-                  <TableHead className="text-right">Total Gastado</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -256,7 +319,7 @@ export default function UsersPage() {
                         <div>
                           <p className="font-medium">{user.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {user.id}
+                            {user.id.slice(0, 8)}...
                           </p>
                         </div>
                       </div>
@@ -267,10 +330,12 @@ export default function UsersPage() {
                           <Mail className="h-3 w-3 text-muted-foreground" />
                           <span>{user.email}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Phone className="h-3 w-3" />
-                          <span>{user.phone}</span>
-                        </div>
+                        {user.phone && (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Phone className="h-3 w-3" />
+                            <span>{user.phone}</span>
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -288,6 +353,8 @@ export default function UsersPage() {
                         className={
                           user.status === "active"
                             ? "border-green-500 text-green-500"
+                            : user.status === "banned"
+                            ? "border-red-500 text-red-500"
                             : "border-gray-500 text-gray-500"
                         }
                       >
@@ -295,18 +362,11 @@ export default function UsersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {user.totalOrders > 0 ? (
+                      {user._count.orders > 0 ? (
                         <div className="flex items-center justify-end gap-1">
                           <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                          <span>{user.totalOrders}</span>
+                          <span>{user._count.orders}</span>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {user.totalSpent > 0 ? (
-                        formatPrice(user.totalSpent)
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -323,9 +383,11 @@ export default function UsersPage() {
                             <Eye className="mr-2 h-4 w-4" />
                             Ver Detalles
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEdit(user)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Editar
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/dashboard/users/${user.id}/edit`}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Editar
+                            </Link>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -349,96 +411,15 @@ export default function UsersPage() {
                   No se encontraron usuarios
                 </h3>
                 <p className="text-muted-foreground">
-                  Intenta ajustar los filtros de búsqueda
+                  {users.length === 0
+                    ? "Crea tu primer usuario para comenzar"
+                    : "Intenta ajustar los filtros de búsqueda"}
                 </p>
               </div>
             )}
           </ScrollArea>
         </CardContent>
       </Card>
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedUser ? "Editar Usuario" : "Nuevo Usuario"}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedUser
-                ? "Modifica los datos del usuario"
-                : "Completa los datos del nuevo usuario"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre Completo</Label>
-              <Input
-                id="name"
-                placeholder="Ej: Juan Pérez"
-                defaultValue={selectedUser?.name || ""}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="correo@ejemplo.com"
-                defaultValue={selectedUser?.email || ""}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono</Label>
-              <Input
-                id="phone"
-                placeholder="3001234567"
-                defaultValue={selectedUser?.phone || ""}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="role">Rol</Label>
-                <Select defaultValue={selectedUser?.role || "customer"}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="customer">Cliente</SelectItem>
-                    <SelectItem value="staff">Personal</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Estado</Label>
-                <Select defaultValue={selectedUser?.status || "active"}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Activo</SelectItem>
-                    <SelectItem value="inactive">Inactivo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={() => setIsDialogOpen(false)}>
-              {selectedUser ? "Guardar Cambios" : "Crear Usuario"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* User Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
@@ -471,6 +452,8 @@ export default function UsersPage() {
                       className={
                         selectedUser.status === "active"
                           ? "border-green-500 text-green-500"
+                          : selectedUser.status === "banned"
+                          ? "border-red-500 text-red-500"
                           : "border-gray-500 text-gray-500"
                       }
                     >
@@ -486,10 +469,12 @@ export default function UsersPage() {
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <span>{selectedUser.email}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedUser.phone}</span>
-                  </div>
+                  {selectedUser.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{selectedUser.phone}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -500,21 +485,13 @@ export default function UsersPage() {
                       Historial de Compras
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-2 gap-4">
-                    <div className="rounded-lg bg-muted p-3 text-center">
+                  <CardContent className="flex justify-center">
+                    <div className="rounded-lg bg-muted p-3 text-center w-full">
                       <p className="text-2xl font-bold">
-                        {selectedUser.totalOrders}
+                        {selectedUser._count.orders}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Total Pedidos
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-muted p-3 text-center">
-                      <p className="text-2xl font-bold text-primary">
-                        {formatPrice(selectedUser.totalSpent)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Total Gastado
                       </p>
                     </div>
                   </CardContent>
@@ -540,7 +517,7 @@ export default function UsersPage() {
           <DialogHeader>
             <DialogTitle>Eliminar Usuario</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar a "{selectedUser?.name}"?
+              ¿Estás seguro de que deseas eliminar a &quot;{selectedUser?.name}&quot;?
               Esta acción no se puede deshacer.
             </DialogDescription>
           </DialogHeader>
@@ -548,14 +525,23 @@ export default function UsersPage() {
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
             >
               Cancelar
             </Button>
             <Button
               variant="destructive"
-              onClick={() => setIsDeleteDialogOpen(false)}
+              onClick={confirmDelete}
+              disabled={isDeleting}
             >
-              Eliminar
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Package,
   ShoppingCart,
@@ -9,71 +10,115 @@ import {
   Clock,
   CheckCircle2,
   ArrowUpRight,
-  ArrowDownRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  mockOrders,
-  getStatusColor,
-  getStatusText,
-} from "@/data/orders";
-import { menuData } from "@/data/menu";
-import { mockUsers } from "@/data/users";
-import { formatPrice } from "@/data/menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOrders } from "@/hooks/use-orders";
+import { useProducts } from "@/hooks/use-products";
+import { useUsers } from "@/hooks/use-users";
+import { formatPrice } from "@/stores/use-cart-store";
+import type { OrderStatus } from "@/types/models";
 
-const stats = [
-  {
-    title: "Ventas del Día",
-    value: formatPrice(485000),
-    change: "+12.5%",
-    trend: "up" as const,
-    icon: DollarSign,
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
-  },
-  {
-    title: "Pedidos Hoy",
-    value: "24",
-    change: "+8.2%",
-    trend: "up" as const,
-    icon: ShoppingCart,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-  },
-  {
-    title: "Productos Activos",
-    value: menuData.reduce((acc, cat) => acc + cat.items.length, 0).toString(),
-    change: "+2",
-    trend: "up" as const,
-    icon: Package,
-    color: "text-purple-500",
-    bgColor: "bg-purple-500/10",
-  },
-  {
-    title: "Clientes Registrados",
-    value: mockUsers.filter((u) => u.role === "customer").length.toString(),
-    change: "-2.1%",
-    trend: "down" as const,
-    icon: Users,
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10",
-  },
-];
+function getStatusColor(status: OrderStatus): string {
+  const colors: Record<OrderStatus, string> = {
+    pending: "bg-yellow-500",
+    confirmed: "bg-blue-500",
+    preparing: "bg-orange-500",
+    ready: "bg-purple-500",
+    delivered: "bg-green-500",
+    cancelled: "bg-red-500",
+  };
+  return colors[status] || "bg-gray-500";
+}
 
-const recentActivity = [
-  { type: "order", message: "Nuevo pedido #ORD-005 recibido", time: "Hace 2 min" },
-  { type: "user", message: "Nuevo cliente: Pedro Gómez", time: "Hace 15 min" },
-  { type: "product", message: "Producto 'Arepa Full' actualizado", time: "Hace 30 min" },
-  { type: "order", message: "Pedido #ORD-004 entregado", time: "Hace 1 hora" },
-  { type: "order", message: "Pedido #ORD-003 en preparación", time: "Hace 2 horas" },
-];
+function getStatusText(status: OrderStatus): string {
+  const texts: Record<OrderStatus, string> = {
+    pending: "Pendiente",
+    confirmed: "Confirmado",
+    preparing: "Preparando",
+    ready: "Listo",
+    delivered: "Entregado",
+    cancelled: "Cancelado",
+  };
+  return texts[status] || status;
+}
 
 export default function DashboardPage() {
-  const pendingOrders = mockOrders.filter((o) => o.status === "pending").length;
-  const preparingOrders = mockOrders.filter((o) => o.status === "preparing").length;
+  const { orders, isLoading: ordersLoading } = useOrders();
+  const { products, isLoading: productsLoading } = useProducts();
+  const { users, isLoading: usersLoading } = useUsers();
+
+  const isLoading = ordersLoading || productsLoading || usersLoading;
+
+  // Calculate stats from real data
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayOrders = orders.filter(
+    (o) => new Date(o.createdAt) >= todayStart
+  );
+
+  const todaySales = todayOrders.reduce((sum, o) => sum + o.total, 0);
+  const pendingOrders = orders.filter((o) => o.status === "pending").length;
+  const preparingOrders = orders.filter((o) => o.status === "preparing").length;
+  const completedToday = todayOrders.filter(
+    (o) => o.status === "delivered"
+  ).length;
+  const activeProducts = products.filter((p) => p.isActive).length;
+  const customerCount = users.filter((u) => u.role === "customer").length;
+
+  const stats = [
+    {
+      title: "Ventas del Día",
+      value: formatPrice(todaySales),
+      icon: DollarSign,
+      color: "text-green-500",
+      bgColor: "bg-green-500/10",
+    },
+    {
+      title: "Pedidos Hoy",
+      value: todayOrders.length.toString(),
+      icon: ShoppingCart,
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
+    },
+    {
+      title: "Productos Activos",
+      value: activeProducts.toString(),
+      icon: Package,
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
+    },
+    {
+      title: "Clientes Registrados",
+      value: customerCount.toString(),
+      icon: Users,
+      color: "text-orange-500",
+      bgColor: "bg-orange-500/10",
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Skeleton className="lg:col-span-2 h-96" />
+          <div className="space-y-6">
+            <Skeleton className="h-52" />
+            <Skeleton className="h-52" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -86,13 +131,8 @@ export default function DashboardPage() {
                 <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${stat.bgColor}`}>
                   <stat.icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
-                <div className={`flex items-center gap-1 text-sm ${stat.trend === "up" ? "text-green-500" : "text-red-500"}`}>
-                  {stat.trend === "up" ? (
-                    <ArrowUpRight className="h-4 w-4" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4" />
-                  )}
-                  {stat.change}
+                <div className="flex items-center gap-1 text-sm text-green-500">
+                  <ArrowUpRight className="h-4 w-4" />
                 </div>
               </div>
               <div className="mt-4">
@@ -110,50 +150,59 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Pedidos Recientes</CardTitle>
-            <Button variant="outline" size="sm">
-              Ver todos
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/admin/dashboard/orders">Ver todos</Link>
             </Button>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-80">
               <div className="space-y-4">
-                {mockOrders.slice(0, 5).map((order) => (
-                  <div
-                    key={order.id}
-                    className="flex items-center justify-between rounded-lg border p-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                        <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{order.id}</p>
-                          <Badge
-                            variant="secondary"
-                            className={`${getStatusColor(order.status)} text-white text-xs`}
-                          >
-                            {getStatusText(order.status)}
-                          </Badge>
+                {orders.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+                    <p className="mt-4 text-muted-foreground">
+                      No hay pedidos aún
+                    </p>
+                  </div>
+                ) : (
+                  orders.slice(0, 5).map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between rounded-lg border p-4"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                          <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {order.customerName} • {order.items.length} items
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{order.orderNumber}</p>
+                            <Badge
+                              variant="secondary"
+                              className={`${getStatusColor(order.status)} text-white text-xs`}
+                            >
+                              {getStatusText(order.status)}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {order.customerName} • {order.items.length} items
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">
+                          {formatPrice(order.total)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleTimeString("es-CO", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-primary">
-                        {formatPrice(order.total)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(order.createdAt).toLocaleTimeString("es-CO", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </ScrollArea>
           </CardContent>
@@ -186,30 +235,35 @@ export default function DashboardPage() {
                   <CheckCircle2 className="h-5 w-5 text-green-500" />
                   <span className="font-medium">Completados Hoy</span>
                 </div>
-                <span className="text-2xl font-bold text-green-500">18</span>
+                <span className="text-2xl font-bold text-green-500">{completedToday}</span>
               </div>
             </CardContent>
           </Card>
 
-          {/* Recent Activity */}
+          {/* Quick Links */}
           <Card>
             <CardHeader>
-              <CardTitle>Actividad Reciente</CardTitle>
+              <CardTitle>Acciones Rápidas</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-52">
-                <div className="space-y-4">
-                  {recentActivity.map((activity, idx) => (
-                    <div key={idx} className="flex items-start gap-3">
-                      <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
-                      <div className="flex-1">
-                        <p className="text-sm">{activity.message}</p>
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
+            <CardContent className="space-y-2">
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/dashboard/products/new">
+                  <Package className="mr-2 h-4 w-4" />
+                  Nuevo Producto
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/dashboard/orders">
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Ver Pedidos
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link href="/admin/dashboard/users/new">
+                  <Users className="mr-2 h-4 w-4" />
+                  Nuevo Usuario
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -218,32 +272,38 @@ export default function DashboardPage() {
       {/* Top Products */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Productos Más Vendidos</CardTitle>
-          <Button variant="outline" size="sm">
-            Ver reporte
+          <CardTitle>Productos Destacados</CardTitle>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/dashboard/products">Ver todos</Link>
           </Button>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { name: "Arepa Full", sales: 45, revenue: 630000 },
-              { name: "Patacón Full", sales: 38, revenue: 722000 },
-              { name: "Suizo Passao", sales: 32, revenue: 704000 },
-              { name: "Perro Especial", sales: 28, revenue: 210000 },
-            ].map((product, idx) => (
-              <div key={idx} className="rounded-lg border p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{product.name}</span>
-                  <Badge variant="secondary">#{idx + 1}</Badge>
-                </div>
-                <div className="mt-2">
-                  <p className="text-2xl font-bold">{product.sales}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatPrice(product.revenue)} en ventas
-                  </p>
-                </div>
+            {products.length === 0 ? (
+              <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
+                <Package className="h-12 w-12 text-muted-foreground" />
+                <p className="mt-4 text-muted-foreground">
+                  No hay productos aún
+                </p>
               </div>
-            ))}
+            ) : (
+              products.slice(0, 4).map((product, idx) => (
+                <div key={product.id} className="rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium line-clamp-1">{product.name}</span>
+                    <Badge variant="secondary">#{idx + 1}</Badge>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-2xl font-bold text-primary">
+                      {formatPrice(product.price)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {product.category?.name || "Sin categoría"}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
