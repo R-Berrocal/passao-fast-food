@@ -17,6 +17,7 @@ import {
   Sun,
   CirclePlus,
   ExternalLink,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -50,6 +51,11 @@ const navigation = [
     name: "Usuarios",
     href: "/admin/dashboard/users",
     icon: Users,
+  },
+  {
+    name: "Configuración",
+    href: "/admin/dashboard/settings",
+    icon: Settings,
   },
 ];
 

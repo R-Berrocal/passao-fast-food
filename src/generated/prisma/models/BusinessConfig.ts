@@ -27,11 +27,19 @@ export type AggregateBusinessConfig = {
 }
 
 export type BusinessConfigAvgAggregateOutputType = {
+  heroStatArepas: number | null
+  heroStatPerros: number | null
+  heroStatPatacones: number | null
+  heroStatTotal: number | null
   deliveryFee: number | null
   minOrderAmount: number | null
 }
 
 export type BusinessConfigSumAggregateOutputType = {
+  heroStatArepas: number | null
+  heroStatPerros: number | null
+  heroStatPatacones: number | null
+  heroStatTotal: number | null
   deliveryFee: number | null
   minOrderAmount: number | null
 }
@@ -43,6 +51,15 @@ export type BusinessConfigMinAggregateOutputType = {
   email: string | null
   address: string | null
   city: string | null
+  logoUrl: string | null
+  slogan: string | null
+  whatsappNumber: string | null
+  instagramUrl: string | null
+  facebookUrl: string | null
+  heroStatArepas: number | null
+  heroStatPerros: number | null
+  heroStatPatacones: number | null
+  heroStatTotal: number | null
   deliveryFee: number | null
   minOrderAmount: number | null
   nequiNumber: string | null
@@ -61,6 +78,15 @@ export type BusinessConfigMaxAggregateOutputType = {
   email: string | null
   address: string | null
   city: string | null
+  logoUrl: string | null
+  slogan: string | null
+  whatsappNumber: string | null
+  instagramUrl: string | null
+  facebookUrl: string | null
+  heroStatArepas: number | null
+  heroStatPerros: number | null
+  heroStatPatacones: number | null
+  heroStatTotal: number | null
   deliveryFee: number | null
   minOrderAmount: number | null
   nequiNumber: string | null
@@ -79,6 +105,15 @@ export type BusinessConfigCountAggregateOutputType = {
   email: number
   address: number
   city: number
+  logoUrl: number
+  slogan: number
+  whatsappNumber: number
+  instagramUrl: number
+  facebookUrl: number
+  heroStatArepas: number
+  heroStatPerros: number
+  heroStatPatacones: number
+  heroStatTotal: number
   deliveryFee: number
   minOrderAmount: number
   nequiNumber: number
@@ -93,11 +128,19 @@ export type BusinessConfigCountAggregateOutputType = {
 
 
 export type BusinessConfigAvgAggregateInputType = {
+  heroStatArepas?: true
+  heroStatPerros?: true
+  heroStatPatacones?: true
+  heroStatTotal?: true
   deliveryFee?: true
   minOrderAmount?: true
 }
 
 export type BusinessConfigSumAggregateInputType = {
+  heroStatArepas?: true
+  heroStatPerros?: true
+  heroStatPatacones?: true
+  heroStatTotal?: true
   deliveryFee?: true
   minOrderAmount?: true
 }
@@ -109,6 +152,15 @@ export type BusinessConfigMinAggregateInputType = {
   email?: true
   address?: true
   city?: true
+  logoUrl?: true
+  slogan?: true
+  whatsappNumber?: true
+  instagramUrl?: true
+  facebookUrl?: true
+  heroStatArepas?: true
+  heroStatPerros?: true
+  heroStatPatacones?: true
+  heroStatTotal?: true
   deliveryFee?: true
   minOrderAmount?: true
   nequiNumber?: true
@@ -127,6 +179,15 @@ export type BusinessConfigMaxAggregateInputType = {
   email?: true
   address?: true
   city?: true
+  logoUrl?: true
+  slogan?: true
+  whatsappNumber?: true
+  instagramUrl?: true
+  facebookUrl?: true
+  heroStatArepas?: true
+  heroStatPerros?: true
+  heroStatPatacones?: true
+  heroStatTotal?: true
   deliveryFee?: true
   minOrderAmount?: true
   nequiNumber?: true
@@ -145,6 +206,15 @@ export type BusinessConfigCountAggregateInputType = {
   email?: true
   address?: true
   city?: true
+  logoUrl?: true
+  slogan?: true
+  whatsappNumber?: true
+  instagramUrl?: true
+  facebookUrl?: true
+  heroStatArepas?: true
+  heroStatPerros?: true
+  heroStatPatacones?: true
+  heroStatTotal?: true
   deliveryFee?: true
   minOrderAmount?: true
   nequiNumber?: true
@@ -250,6 +320,15 @@ export type BusinessConfigGroupByOutputType = {
   email: string
   address: string
   city: string
+  logoUrl: string | null
+  slogan: string
+  whatsappNumber: string | null
+  instagramUrl: string | null
+  facebookUrl: string | null
+  heroStatArepas: number
+  heroStatPerros: number
+  heroStatPatacones: number
+  heroStatTotal: number
   deliveryFee: number
   minOrderAmount: number
   nequiNumber: string | null
@@ -291,6 +370,15 @@ export type BusinessConfigWhereInput = {
   email?: Prisma.StringFilter<"BusinessConfig"> | string
   address?: Prisma.StringFilter<"BusinessConfig"> | string
   city?: Prisma.StringFilter<"BusinessConfig"> | string
+  logoUrl?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
+  slogan?: Prisma.StringFilter<"BusinessConfig"> | string
+  whatsappNumber?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
+  instagramUrl?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
+  facebookUrl?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
+  heroStatArepas?: Prisma.IntFilter<"BusinessConfig"> | number
+  heroStatPerros?: Prisma.IntFilter<"BusinessConfig"> | number
+  heroStatPatacones?: Prisma.IntFilter<"BusinessConfig"> | number
+  heroStatTotal?: Prisma.IntFilter<"BusinessConfig"> | number
   deliveryFee?: Prisma.IntFilter<"BusinessConfig"> | number
   minOrderAmount?: Prisma.IntFilter<"BusinessConfig"> | number
   nequiNumber?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
@@ -309,6 +397,15 @@ export type BusinessConfigOrderByWithRelationInput = {
   email?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  logoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  slogan?: Prisma.SortOrder
+  whatsappNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  instagramUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  facebookUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  heroStatArepas?: Prisma.SortOrder
+  heroStatPerros?: Prisma.SortOrder
+  heroStatPatacones?: Prisma.SortOrder
+  heroStatTotal?: Prisma.SortOrder
   deliveryFee?: Prisma.SortOrder
   minOrderAmount?: Prisma.SortOrder
   nequiNumber?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -330,6 +427,15 @@ export type BusinessConfigWhereUniqueInput = Prisma.AtLeast<{
   email?: Prisma.StringFilter<"BusinessConfig"> | string
   address?: Prisma.StringFilter<"BusinessConfig"> | string
   city?: Prisma.StringFilter<"BusinessConfig"> | string
+  logoUrl?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
+  slogan?: Prisma.StringFilter<"BusinessConfig"> | string
+  whatsappNumber?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
+  instagramUrl?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
+  facebookUrl?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
+  heroStatArepas?: Prisma.IntFilter<"BusinessConfig"> | number
+  heroStatPerros?: Prisma.IntFilter<"BusinessConfig"> | number
+  heroStatPatacones?: Prisma.IntFilter<"BusinessConfig"> | number
+  heroStatTotal?: Prisma.IntFilter<"BusinessConfig"> | number
   deliveryFee?: Prisma.IntFilter<"BusinessConfig"> | number
   minOrderAmount?: Prisma.IntFilter<"BusinessConfig"> | number
   nequiNumber?: Prisma.StringNullableFilter<"BusinessConfig"> | string | null
@@ -348,6 +454,15 @@ export type BusinessConfigOrderByWithAggregationInput = {
   email?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  logoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  slogan?: Prisma.SortOrder
+  whatsappNumber?: Prisma.SortOrderInput | Prisma.SortOrder
+  instagramUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  facebookUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  heroStatArepas?: Prisma.SortOrder
+  heroStatPerros?: Prisma.SortOrder
+  heroStatPatacones?: Prisma.SortOrder
+  heroStatTotal?: Prisma.SortOrder
   deliveryFee?: Prisma.SortOrder
   minOrderAmount?: Prisma.SortOrder
   nequiNumber?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -374,6 +489,15 @@ export type BusinessConfigScalarWhereWithAggregatesInput = {
   email?: Prisma.StringWithAggregatesFilter<"BusinessConfig"> | string
   address?: Prisma.StringWithAggregatesFilter<"BusinessConfig"> | string
   city?: Prisma.StringWithAggregatesFilter<"BusinessConfig"> | string
+  logoUrl?: Prisma.StringNullableWithAggregatesFilter<"BusinessConfig"> | string | null
+  slogan?: Prisma.StringWithAggregatesFilter<"BusinessConfig"> | string
+  whatsappNumber?: Prisma.StringNullableWithAggregatesFilter<"BusinessConfig"> | string | null
+  instagramUrl?: Prisma.StringNullableWithAggregatesFilter<"BusinessConfig"> | string | null
+  facebookUrl?: Prisma.StringNullableWithAggregatesFilter<"BusinessConfig"> | string | null
+  heroStatArepas?: Prisma.IntWithAggregatesFilter<"BusinessConfig"> | number
+  heroStatPerros?: Prisma.IntWithAggregatesFilter<"BusinessConfig"> | number
+  heroStatPatacones?: Prisma.IntWithAggregatesFilter<"BusinessConfig"> | number
+  heroStatTotal?: Prisma.IntWithAggregatesFilter<"BusinessConfig"> | number
   deliveryFee?: Prisma.IntWithAggregatesFilter<"BusinessConfig"> | number
   minOrderAmount?: Prisma.IntWithAggregatesFilter<"BusinessConfig"> | number
   nequiNumber?: Prisma.StringNullableWithAggregatesFilter<"BusinessConfig"> | string | null
@@ -392,6 +516,15 @@ export type BusinessConfigCreateInput = {
   email?: string
   address?: string
   city?: string
+  logoUrl?: string | null
+  slogan?: string
+  whatsappNumber?: string | null
+  instagramUrl?: string | null
+  facebookUrl?: string | null
+  heroStatArepas?: number
+  heroStatPerros?: number
+  heroStatPatacones?: number
+  heroStatTotal?: number
   deliveryFee?: number
   minOrderAmount?: number
   nequiNumber?: string | null
@@ -410,6 +543,15 @@ export type BusinessConfigUncheckedCreateInput = {
   email?: string
   address?: string
   city?: string
+  logoUrl?: string | null
+  slogan?: string
+  whatsappNumber?: string | null
+  instagramUrl?: string | null
+  facebookUrl?: string | null
+  heroStatArepas?: number
+  heroStatPerros?: number
+  heroStatPatacones?: number
+  heroStatTotal?: number
   deliveryFee?: number
   minOrderAmount?: number
   nequiNumber?: string | null
@@ -428,6 +570,15 @@ export type BusinessConfigUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
+  logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slogan?: Prisma.StringFieldUpdateOperationsInput | string
+  whatsappNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagramUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebookUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroStatArepas?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatPerros?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatPatacones?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatTotal?: Prisma.IntFieldUpdateOperationsInput | number
   deliveryFee?: Prisma.IntFieldUpdateOperationsInput | number
   minOrderAmount?: Prisma.IntFieldUpdateOperationsInput | number
   nequiNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -446,6 +597,15 @@ export type BusinessConfigUncheckedUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
+  logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slogan?: Prisma.StringFieldUpdateOperationsInput | string
+  whatsappNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagramUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebookUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroStatArepas?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatPerros?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatPatacones?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatTotal?: Prisma.IntFieldUpdateOperationsInput | number
   deliveryFee?: Prisma.IntFieldUpdateOperationsInput | number
   minOrderAmount?: Prisma.IntFieldUpdateOperationsInput | number
   nequiNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -464,6 +624,15 @@ export type BusinessConfigCreateManyInput = {
   email?: string
   address?: string
   city?: string
+  logoUrl?: string | null
+  slogan?: string
+  whatsappNumber?: string | null
+  instagramUrl?: string | null
+  facebookUrl?: string | null
+  heroStatArepas?: number
+  heroStatPerros?: number
+  heroStatPatacones?: number
+  heroStatTotal?: number
   deliveryFee?: number
   minOrderAmount?: number
   nequiNumber?: string | null
@@ -482,6 +651,15 @@ export type BusinessConfigUpdateManyMutationInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
+  logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slogan?: Prisma.StringFieldUpdateOperationsInput | string
+  whatsappNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagramUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebookUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroStatArepas?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatPerros?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatPatacones?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatTotal?: Prisma.IntFieldUpdateOperationsInput | number
   deliveryFee?: Prisma.IntFieldUpdateOperationsInput | number
   minOrderAmount?: Prisma.IntFieldUpdateOperationsInput | number
   nequiNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -500,6 +678,15 @@ export type BusinessConfigUncheckedUpdateManyInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   address?: Prisma.StringFieldUpdateOperationsInput | string
   city?: Prisma.StringFieldUpdateOperationsInput | string
+  logoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  slogan?: Prisma.StringFieldUpdateOperationsInput | string
+  whatsappNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  instagramUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  facebookUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  heroStatArepas?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatPerros?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatPatacones?: Prisma.IntFieldUpdateOperationsInput | number
+  heroStatTotal?: Prisma.IntFieldUpdateOperationsInput | number
   deliveryFee?: Prisma.IntFieldUpdateOperationsInput | number
   minOrderAmount?: Prisma.IntFieldUpdateOperationsInput | number
   nequiNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -518,6 +705,15 @@ export type BusinessConfigCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  logoUrl?: Prisma.SortOrder
+  slogan?: Prisma.SortOrder
+  whatsappNumber?: Prisma.SortOrder
+  instagramUrl?: Prisma.SortOrder
+  facebookUrl?: Prisma.SortOrder
+  heroStatArepas?: Prisma.SortOrder
+  heroStatPerros?: Prisma.SortOrder
+  heroStatPatacones?: Prisma.SortOrder
+  heroStatTotal?: Prisma.SortOrder
   deliveryFee?: Prisma.SortOrder
   minOrderAmount?: Prisma.SortOrder
   nequiNumber?: Prisma.SortOrder
@@ -530,6 +726,10 @@ export type BusinessConfigCountOrderByAggregateInput = {
 }
 
 export type BusinessConfigAvgOrderByAggregateInput = {
+  heroStatArepas?: Prisma.SortOrder
+  heroStatPerros?: Prisma.SortOrder
+  heroStatPatacones?: Prisma.SortOrder
+  heroStatTotal?: Prisma.SortOrder
   deliveryFee?: Prisma.SortOrder
   minOrderAmount?: Prisma.SortOrder
 }
@@ -541,6 +741,15 @@ export type BusinessConfigMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  logoUrl?: Prisma.SortOrder
+  slogan?: Prisma.SortOrder
+  whatsappNumber?: Prisma.SortOrder
+  instagramUrl?: Prisma.SortOrder
+  facebookUrl?: Prisma.SortOrder
+  heroStatArepas?: Prisma.SortOrder
+  heroStatPerros?: Prisma.SortOrder
+  heroStatPatacones?: Prisma.SortOrder
+  heroStatTotal?: Prisma.SortOrder
   deliveryFee?: Prisma.SortOrder
   minOrderAmount?: Prisma.SortOrder
   nequiNumber?: Prisma.SortOrder
@@ -559,6 +768,15 @@ export type BusinessConfigMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   address?: Prisma.SortOrder
   city?: Prisma.SortOrder
+  logoUrl?: Prisma.SortOrder
+  slogan?: Prisma.SortOrder
+  whatsappNumber?: Prisma.SortOrder
+  instagramUrl?: Prisma.SortOrder
+  facebookUrl?: Prisma.SortOrder
+  heroStatArepas?: Prisma.SortOrder
+  heroStatPerros?: Prisma.SortOrder
+  heroStatPatacones?: Prisma.SortOrder
+  heroStatTotal?: Prisma.SortOrder
   deliveryFee?: Prisma.SortOrder
   minOrderAmount?: Prisma.SortOrder
   nequiNumber?: Prisma.SortOrder
@@ -571,6 +789,10 @@ export type BusinessConfigMinOrderByAggregateInput = {
 }
 
 export type BusinessConfigSumOrderByAggregateInput = {
+  heroStatArepas?: Prisma.SortOrder
+  heroStatPerros?: Prisma.SortOrder
+  heroStatPatacones?: Prisma.SortOrder
+  heroStatTotal?: Prisma.SortOrder
   deliveryFee?: Prisma.SortOrder
   minOrderAmount?: Prisma.SortOrder
 }
@@ -584,6 +806,15 @@ export type BusinessConfigSelect<ExtArgs extends runtime.Types.Extensions.Intern
   email?: boolean
   address?: boolean
   city?: boolean
+  logoUrl?: boolean
+  slogan?: boolean
+  whatsappNumber?: boolean
+  instagramUrl?: boolean
+  facebookUrl?: boolean
+  heroStatArepas?: boolean
+  heroStatPerros?: boolean
+  heroStatPatacones?: boolean
+  heroStatTotal?: boolean
   deliveryFee?: boolean
   minOrderAmount?: boolean
   nequiNumber?: boolean
@@ -602,6 +833,15 @@ export type BusinessConfigSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   email?: boolean
   address?: boolean
   city?: boolean
+  logoUrl?: boolean
+  slogan?: boolean
+  whatsappNumber?: boolean
+  instagramUrl?: boolean
+  facebookUrl?: boolean
+  heroStatArepas?: boolean
+  heroStatPerros?: boolean
+  heroStatPatacones?: boolean
+  heroStatTotal?: boolean
   deliveryFee?: boolean
   minOrderAmount?: boolean
   nequiNumber?: boolean
@@ -620,6 +860,15 @@ export type BusinessConfigSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   email?: boolean
   address?: boolean
   city?: boolean
+  logoUrl?: boolean
+  slogan?: boolean
+  whatsappNumber?: boolean
+  instagramUrl?: boolean
+  facebookUrl?: boolean
+  heroStatArepas?: boolean
+  heroStatPerros?: boolean
+  heroStatPatacones?: boolean
+  heroStatTotal?: boolean
   deliveryFee?: boolean
   minOrderAmount?: boolean
   nequiNumber?: boolean
@@ -638,6 +887,15 @@ export type BusinessConfigSelectScalar = {
   email?: boolean
   address?: boolean
   city?: boolean
+  logoUrl?: boolean
+  slogan?: boolean
+  whatsappNumber?: boolean
+  instagramUrl?: boolean
+  facebookUrl?: boolean
+  heroStatArepas?: boolean
+  heroStatPerros?: boolean
+  heroStatPatacones?: boolean
+  heroStatTotal?: boolean
   deliveryFee?: boolean
   minOrderAmount?: boolean
   nequiNumber?: boolean
@@ -649,7 +907,7 @@ export type BusinessConfigSelectScalar = {
   updatedAt?: boolean
 }
 
-export type BusinessConfigOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "phone" | "email" | "address" | "city" | "deliveryFee" | "minOrderAmount" | "nequiNumber" | "daviplataNumber" | "bankName" | "bankAccountNumber" | "bankAccountType" | "bankAccountHolder" | "updatedAt", ExtArgs["result"]["businessConfig"]>
+export type BusinessConfigOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "phone" | "email" | "address" | "city" | "logoUrl" | "slogan" | "whatsappNumber" | "instagramUrl" | "facebookUrl" | "heroStatArepas" | "heroStatPerros" | "heroStatPatacones" | "heroStatTotal" | "deliveryFee" | "minOrderAmount" | "nequiNumber" | "daviplataNumber" | "bankName" | "bankAccountNumber" | "bankAccountType" | "bankAccountHolder" | "updatedAt", ExtArgs["result"]["businessConfig"]>
 
 export type $BusinessConfigPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "BusinessConfig"
@@ -661,6 +919,15 @@ export type $BusinessConfigPayload<ExtArgs extends runtime.Types.Extensions.Inte
     email: string
     address: string
     city: string
+    logoUrl: string | null
+    slogan: string
+    whatsappNumber: string | null
+    instagramUrl: string | null
+    facebookUrl: string | null
+    heroStatArepas: number
+    heroStatPerros: number
+    heroStatPatacones: number
+    heroStatTotal: number
     deliveryFee: number
     minOrderAmount: number
     nequiNumber: string | null
@@ -1099,6 +1366,15 @@ export interface BusinessConfigFieldRefs {
   readonly email: Prisma.FieldRef<"BusinessConfig", 'String'>
   readonly address: Prisma.FieldRef<"BusinessConfig", 'String'>
   readonly city: Prisma.FieldRef<"BusinessConfig", 'String'>
+  readonly logoUrl: Prisma.FieldRef<"BusinessConfig", 'String'>
+  readonly slogan: Prisma.FieldRef<"BusinessConfig", 'String'>
+  readonly whatsappNumber: Prisma.FieldRef<"BusinessConfig", 'String'>
+  readonly instagramUrl: Prisma.FieldRef<"BusinessConfig", 'String'>
+  readonly facebookUrl: Prisma.FieldRef<"BusinessConfig", 'String'>
+  readonly heroStatArepas: Prisma.FieldRef<"BusinessConfig", 'Int'>
+  readonly heroStatPerros: Prisma.FieldRef<"BusinessConfig", 'Int'>
+  readonly heroStatPatacones: Prisma.FieldRef<"BusinessConfig", 'Int'>
+  readonly heroStatTotal: Prisma.FieldRef<"BusinessConfig", 'Int'>
   readonly deliveryFee: Prisma.FieldRef<"BusinessConfig", 'Int'>
   readonly minOrderAmount: Prisma.FieldRef<"BusinessConfig", 'Int'>
   readonly nequiNumber: Prisma.FieldRef<"BusinessConfig", 'String'>

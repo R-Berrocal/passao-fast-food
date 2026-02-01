@@ -263,6 +263,21 @@ model BusinessConfig {
   address String @default("")
   city    String @default("Barranquilla")
 
+  // Branding
+  logoUrl String?
+  slogan  String @default("Las mejores arepas, perros y patacones de la ciudad.")
+
+  // Contacto y redes sociales
+  whatsappNumber String?
+  instagramUrl   String?
+  facebookUrl    String?
+
+  // Hero statistics
+  heroStatArepas    Int @default(12)
+  heroStatPerros    Int @default(5)
+  heroStatPatacones Int @default(10)
+  heroStatTotal     Int @default(30)
+
   // Delivery
   deliveryFee    Int @default(0)
   minOrderAmount Int @default(0)

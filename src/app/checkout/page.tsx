@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, MapPin, Store, Loader2, CheckCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Store, Loader2, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,9 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCartStore, useCartTotal, formatPrice } from "@/stores/use-cart-store";
-import { useBusinessConfig } from "@/hooks/use-business";
+import { useBusinessConfig, useBusinessHours } from "@/hooks/use-business";
 import { useCreateOrder } from "@/hooks/use-orders";
+import { type DayOfWeek } from "@/types/models";
 
 const emailValidation = z
   .string()
@@ -52,7 +53,84 @@ export default function CheckoutPage() {
   const [orderSuccess, setOrderSuccess] = useState<{ orderNumber: string } | null>(null);
 
   const { config, isLoading: configLoading } = useBusinessConfig();
+  const { hours } = useBusinessHours();
   const { createOrder, isLoading: orderLoading, error: orderError } = useCreateOrder();
+
+  const formatTime = (time: string) => {
+    const [hour, minute] = time.split(":");
+    const h = parseInt(hour, 10);
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${minute} ${period}`;
+  };
+
+  const getDayOfWeek = (): DayOfWeek => {
+    const days: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    return days[new Date().getDay()];
+  };
+
+  const getTodayHours = () => {
+    if (!hours || hours.length === 0) return null;
+    const today = getDayOfWeek();
+    return hours.find((h) => h.dayOfWeek === today);
+  };
+
+  const isBusinessOpen = () => {
+    const todayHours = getTodayHours();
+
+    if (!todayHours || !todayHours.isOpen) {
+      return false;
+    }
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    const [openHour, openMinute] = (todayHours.openTime || "10:00").split(":").map(Number);
+    const [closeHour, closeMinute] = (todayHours.closeTime || "22:00").split(":").map(Number);
+
+    const openTime = openHour * 60 + openMinute;
+    const closeTime = closeHour * 60 + closeMinute;
+
+    return currentTime >= openTime && currentTime < closeTime;
+  };
+
+  const getBusinessHoursText = () => {
+    const todayHours = getTodayHours();
+
+    if (!todayHours || !todayHours.isOpen) {
+      return "Cerrado hoy";
+    }
+
+    return `${formatTime(todayHours.openTime || "10:00")} - ${formatTime(todayHours.closeTime || "22:00")}`;
+  };
+
+  const getBusinessStatusMessage = () => {
+    const todayHours = getTodayHours();
+
+    if (!todayHours || !todayHours.isOpen) {
+      return "El negocio está cerrado hoy. Por favor, vuelve otro día.";
+    }
+
+    if (!isBusinessOpen()) {
+      const openTime = formatTime(todayHours.openTime || "10:00");
+      const closeTime = formatTime(todayHours.closeTime || "22:00");
+
+      const now = new Date();
+      const currentHour = now.getHours();
+      const [openHour] = (todayHours.openTime || "10:00").split(":").map(Number);
+
+      if (currentHour < openHour) {
+        return `Abrimos a las ${openTime}. Horario de hoy: ${openTime} - ${closeTime}`;
+      } else {
+        return `Ya cerramos por hoy. Horario: ${openTime} - ${closeTime}`;
+      }
+    }
+
+    return null;
+  };
+
+  const businessOpen = isBusinessOpen();
+  const businessStatusMessage = getBusinessStatusMessage();
 
   const deliveryForm = useForm<DeliveryFormData>({
     resolver: zodResolver(deliverySchema),
@@ -138,8 +216,9 @@ export default function CheckoutPage() {
   };
 
   const openWhatsApp = (message: string) => {
+    const whatsappNumber = config?.whatsappNumber || "573014483308";
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/573014483308?text=${encodedMessage}`;
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, "_blank");
   };
 
@@ -228,6 +307,26 @@ export default function CheckoutPage() {
         </div>
       </header>
 
+      {!businessOpen && businessStatusMessage && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20">
+                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p className="font-medium text-amber-600 dark:text-amber-400">
+                  Estamos cerrados
+                </p>
+                <p className="text-sm text-amber-600/80 dark:text-amber-400/80">
+                  {businessStatusMessage}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="container mx-auto px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
@@ -241,11 +340,11 @@ export default function CheckoutPage() {
                   onValueChange={(v) => setOrderType(v as "delivery" | "pickup")}
                 >
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="delivery" className="gap-2">
+                    <TabsTrigger value="delivery" className="gap-2 cursor-pointer">
                       <MapPin className="h-4 w-4" />
                       Domicilio
                     </TabsTrigger>
-                    <TabsTrigger value="pickup" className="gap-2">
+                    <TabsTrigger value="pickup" className="gap-2 cursor-pointer">
                       <Store className="h-4 w-4" />
                       Recoger
                     </TabsTrigger>
@@ -380,10 +479,10 @@ export default function CheckoutPage() {
                       <CardContent className="p-4">
                         <h4 className="font-semibold">Dirección del local</h4>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          {config?.address || "Barranquilla, Colombia"}
+                          {config?.address ? `${config.address}, ${config.city}` : "Barranquilla, Colombia"}
                         </p>
                         <p className="mt-2 text-sm text-muted-foreground">
-                          Horario: 5:00 PM - 11:00 PM
+                          Horario hoy: {getBusinessHoursText()}
                         </p>
                       </CardContent>
                     </Card>
@@ -480,16 +579,37 @@ export default function CheckoutPage() {
                       </div>
                     )}
 
+                    {!businessOpen && businessStatusMessage && (
+                      <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-3 text-sm">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="font-medium text-amber-600 dark:text-amber-400">
+                              Fuera de horario
+                            </p>
+                            <p className="text-amber-600/80 dark:text-amber-400/80 mt-1">
+                              {businessStatusMessage}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <Button
                       className="w-full cursor-pointer"
                       size="lg"
-                      disabled={items.length === 0 || orderLoading || configLoading}
+                      disabled={items.length === 0 || orderLoading || configLoading || !businessOpen}
                       onClick={handleSubmit}
                     >
                       {orderLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Procesando...
+                        </>
+                      ) : !businessOpen ? (
+                        <>
+                          <Clock className="mr-2 h-4 w-4" />
+                          Cerrado
                         </>
                       ) : (
                         "Confirmar Pedido"

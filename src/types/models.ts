@@ -165,10 +165,24 @@ export interface BusinessConfig {
   address: string;
   city: string;
 
+  // Branding
+  logoUrl?: string;
+  slogan: string;
+
+  // Contacto y redes sociales
+  whatsappNumber?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+
+  // Hero statistics
+  heroStatArepas: number;
+  heroStatPerros: number;
+  heroStatPatacones: number;
+  heroStatTotal: number;
+
   // Delivery
   deliveryFee: number;
   minOrderAmount: number;
-  deliveryRadius?: number; // En km
 
   // Pagos
   nequiNumber?: string;

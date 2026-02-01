@@ -101,3 +101,4 @@ Use `@/*` to import from `src/*` (configured in tsconfig.json).
 - no uses server actions, usa Route handlers
 - para manejo de estado global usa Zustand
 - para formularios usar react-hook-form y zod
+- para las migraciones con prisma debes cambiar la variable de entorno por DIRECT_URL

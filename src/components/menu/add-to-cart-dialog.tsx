@@ -28,7 +28,7 @@ export function AddToCartDialog({ product, open, onOpenChange }: AddToCartDialog
   const [selectedAdditions, setSelectedAdditions] = useState<CartItemAddition[]>([]);
   const { additions, isLoading } = useAdditions();
   const addItem = useCartStore((state) => state.addItem);
-  const openCart = useCartStore((state) => state.openCart);
+  // const openCart = useCartStore((state) => state.openCart);
 
   if (!product) return null;
 
@@ -152,7 +152,7 @@ export function AddToCartDialog({ product, open, onOpenChange }: AddToCartDialog
           <Button variant="outline" onClick={handleClose} className="w-full sm:w-auto">
             Cancelar
           </Button>
-          <Button onClick={handleAddToCart} className="w-full sm:w-auto gap-2">
+          <Button onClick={handleAddToCart} className="w-full sm:w-auto gap-2 cursor-pointer">
             <Plus className="h-4 w-4" />
             Agregar al carrito
           </Button>
