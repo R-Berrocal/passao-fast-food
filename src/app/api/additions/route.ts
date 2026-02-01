@@ -10,10 +10,13 @@ import {
   serverErrorResponse,
 } from "@/lib/api-response";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const showAll = searchParams.get("all") === "true";
+
     const additions = await prisma.addition.findMany({
-      where: { isActive: true },
+      where: showAll ? {} : { isActive: true },
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
     });
 

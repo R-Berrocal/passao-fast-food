@@ -10,7 +10,49 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-export function useAdditions() {
+export function useAddition(id: string | null) {
+  const [addition, setAddition] = useState<Addition | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchAddition = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/additions/${id}`);
+        const result: ApiResponse<Addition> = await response.json();
+
+        if (result.success && result.data) {
+          setAddition(result.data);
+        } else {
+          setError(result.error || "Adición no encontrada");
+        }
+      } catch {
+        setError("Error de conexión");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAddition();
+  }, [id]);
+
+  return { addition, isLoading, error };
+}
+
+interface UseAdditionsOptions {
+  showAll?: boolean;
+}
+
+export function useAdditions(options: UseAdditionsOptions = {}) {
+  const { showAll = false } = options;
   const [additions, setAdditions] = useState<Addition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +62,10 @@ export function useAdditions() {
     setError(null);
 
     try {
-      const response = await fetch("/api/additions");
+      const params = new URLSearchParams();
+      if (showAll) params.set("all", "true");
+
+      const response = await fetch(`/api/additions?${params.toString()}`);
       const result: ApiResponse<Addition[]> = await response.json();
 
       if (result.success && result.data) {
@@ -33,7 +78,7 @@ export function useAdditions() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showAll]);
 
   useEffect(() => {
     fetchAdditions();
