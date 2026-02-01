@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,14 +56,43 @@ import { useAuth } from "@/hooks/use-auth";
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from "@/lib/validations/auth";
 
 export function Navbar() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { setTheme, resolvedTheme } = useTheme();
   const itemCount = useCartItemCount();
   const { isOpen, openCart, closeCart } = useCartStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [authMessage, setAuthMessage] = useState<string | null>(null);
 
   const { user, isAuthenticated, isLoading, isSubmitting, error, login, register, logout, clearError } = useAuth();
+
+  const hasProcessedParams = useRef(false);
+
+  // Handle URL params for auth redirects
+  useEffect(() => {
+    if (hasProcessedParams.current || isLoading) return;
+
+    const authRequired = searchParams.get("authRequired");
+    const unauthorized = searchParams.get("unauthorized");
+
+    if (authRequired === "true" && !isAuthenticated) {
+      hasProcessedParams.current = true;
+      // Use requestAnimationFrame to defer state updates
+      requestAnimationFrame(() => {
+        setAuthMessage("Debes iniciar sesión para acceder a esta página");
+        setLoginOpen(true);
+      });
+      router.replace("/", { scroll: false });
+    } else if (unauthorized === "true") {
+      hasProcessedParams.current = true;
+      requestAnimationFrame(() => {
+        setAuthMessage("No tienes permisos para acceder a esta página");
+      });
+      router.replace("/", { scroll: false });
+    }
+  }, [searchParams, isAuthenticated, isLoading, router]);
 
   const loginForm = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -102,8 +133,16 @@ export function Navbar() {
 
   const openLoginDialog = () => {
     clearError();
+    setAuthMessage(null);
     loginForm.reset();
     setLoginOpen(true);
+  };
+
+  const closeLoginDialog = (open: boolean) => {
+    setLoginOpen(open);
+    if (!open) {
+      setAuthMessage(null);
+    }
   };
 
   const openRegisterDialog = () => {
@@ -386,7 +425,7 @@ export function Navbar() {
       </header>
 
       {/* Login Dialog */}
-      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+      <Dialog open={loginOpen} onOpenChange={closeLoginDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Iniciar sesión</DialogTitle>
@@ -396,6 +435,11 @@ export function Navbar() {
           </DialogHeader>
           <form onSubmit={loginForm.handleSubmit(handleLogin)}>
             <div className="grid gap-4 py-4">
+              {authMessage && (
+                <div className="rounded-md bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-400">
+                  {authMessage}
+                </div>
+              )}
               {error && (
                 <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                   {error}

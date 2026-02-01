@@ -18,10 +18,17 @@ import { useCartStore, useCartTotal, formatPrice } from "@/stores/use-cart-store
 import { useBusinessConfig } from "@/hooks/use-business";
 import { useCreateOrder } from "@/hooks/use-orders";
 
+const emailValidation = z
+  .string()
+  .refine(
+    (val) => val === "" || z.string().email().safeParse(val).success,
+    { message: "Correo electrónico inválido" }
+  );
+
 const deliverySchema = z.object({
   customerName: z.string().min(2, "El nombre es requerido"),
   customerPhone: z.string().min(10, "Número de teléfono inválido"),
-  customerEmail: z.string().email().optional().or(z.literal("")),
+  customerEmail: emailValidation,
   deliveryAddress: z.string().min(5, "La dirección es requerida"),
   notes: z.string().optional(),
 });
@@ -29,7 +36,7 @@ const deliverySchema = z.object({
 const pickupSchema = z.object({
   customerName: z.string().min(2, "El nombre es requerido"),
   customerPhone: z.string().min(10, "Número de teléfono inválido"),
-  customerEmail: z.string().email().optional().or(z.literal("")),
+  customerEmail: emailValidation,
   notes: z.string().optional(),
 });
 
@@ -71,6 +78,71 @@ export default function CheckoutPage() {
   const deliveryCost = orderType === "delivery" ? (config?.deliveryFee || 5000) : 0;
   const finalTotal = total + deliveryCost;
 
+  const buildWhatsAppMessage = (orderNumber: string, formData: DeliveryFormData | PickupFormData) => {
+    const lines: string[] = [
+      `*NUEVO PEDIDO - ${orderNumber}*`,
+      "",
+      `*Cliente:* ${formData.customerName}`,
+      `*Teléfono:* ${formData.customerPhone}`,
+    ];
+
+    if (formData.customerEmail) {
+      lines.push(`*Email:* ${formData.customerEmail}`);
+    }
+
+    lines.push("");
+    lines.push(`*Tipo:* ${orderType === "delivery" ? "Domicilio" : "Recoger en local"}`);
+
+    if (orderType === "delivery" && "deliveryAddress" in formData) {
+      lines.push(`*Dirección:* ${formData.deliveryAddress}`);
+    }
+
+    lines.push("");
+    lines.push("*PRODUCTOS:*");
+    lines.push("─".repeat(20));
+
+    items.forEach((item) => {
+      lines.push(`• ${item.quantity}x ${item.name} - ${formatPrice(item.totalPrice * item.quantity)}`);
+      if (item.additions.length > 0) {
+        lines.push(`  + ${item.additions.map((a) => a.name).join(", ")}`);
+      }
+    });
+
+    lines.push("─".repeat(20));
+    lines.push(`*Subtotal:* ${formatPrice(total)}`);
+
+    if (orderType === "delivery") {
+      lines.push(`*Domicilio:* ${formatPrice(deliveryCost)}`);
+    }
+
+    lines.push(`*TOTAL: ${formatPrice(finalTotal)}*`);
+    lines.push("");
+
+    const paymentLabels: Record<string, string> = {
+      cash: "Efectivo al recibir",
+      nequi: "Nequi",
+      daviplata: "Daviplata",
+      transfer: "Transferencia bancaria",
+    };
+    lines.push(`*Método de pago:* ${paymentLabels[paymentMethod]}`);
+
+    if (formData.notes) {
+      lines.push("");
+      lines.push(`📝 *Notas:* ${formData.notes}`);
+    }
+
+    lines.push("");
+    lines.push("¡Gracias por tu pedido!");
+
+    return lines.join("\n");
+  };
+
+  const openWhatsApp = (message: string) => {
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/573014483308?text=${encodedMessage}`;
+    window.open(whatsappUrl, "_blank");
+  };
+
   const handleSubmit = async () => {
     const formData = orderType === "delivery"
       ? deliveryForm.getValues()
@@ -100,6 +172,8 @@ export default function CheckoutPage() {
     });
 
     if (order) {
+      const whatsappMessage = buildWhatsAppMessage(order.orderNumber, formData);
+      openWhatsApp(whatsappMessage);
       setOrderSuccess({ orderNumber: order.orderNumber });
       clearCart();
     }
@@ -215,6 +289,11 @@ export default function CheckoutPage() {
                         placeholder="tu@email.com"
                         {...deliveryForm.register("customerEmail")}
                       />
+                      {deliveryForm.formState.errors.customerEmail && (
+                        <p className="text-sm text-destructive">
+                          {deliveryForm.formState.errors.customerEmail.message}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -280,6 +359,11 @@ export default function CheckoutPage() {
                         placeholder="tu@email.com"
                         {...pickupForm.register("customerEmail")}
                       />
+                      {pickupForm.formState.errors.customerEmail && (
+                        <p className="text-sm text-destructive">
+                          {pickupForm.formState.errors.customerEmail.message}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -397,7 +481,7 @@ export default function CheckoutPage() {
                     )}
 
                     <Button
-                      className="w-full"
+                      className="w-full cursor-pointer"
                       size="lg"
                       disabled={items.length === 0 || orderLoading || configLoading}
                       onClick={handleSubmit}

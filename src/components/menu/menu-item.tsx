@@ -33,7 +33,7 @@ export function MenuItem({ product }: MenuItemProps) {
           <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
           <Button
             size="icon"
-            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90"
+            className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               setDialogOpen(true);

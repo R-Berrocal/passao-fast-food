@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
@@ -15,11 +15,14 @@ import {
   ChevronRight,
   Moon,
   Sun,
+  CirclePlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { useAuthStore } from "@/stores/use-auth-store";
 
 const navigation = [
   {
@@ -31,6 +34,11 @@ const navigation = [
     name: "Productos",
     href: "/admin/dashboard/products",
     icon: Package,
+  },
+  {
+    name: "Adiciones",
+    href: "/admin/dashboard/additions",
+    icon: CirclePlus,
   },
   {
     name: "Órdenes",
@@ -50,11 +58,37 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
+  const getUserInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getRoleLabel = (role: string) => {
+    const labels: Record<string, string> = {
+      admin: "Administrador",
+      staff: "Personal",
+      customer: "Cliente",
+    };
+    return labels[role] || role;
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <ProtectedRoute allowedRoles={["admin", "staff"]}>
+      <div className="min-h-screen bg-background">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -119,13 +153,13 @@ export default function DashboardLayout({
 
           {/* Bottom section */}
           <div className="p-3 space-y-1">
-            <Link
-              href="/"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <LogOut className="h-5 w-5" />
-              Salir
-            </Link>
+              Cerrar Sesión
+            </button>
           </div>
         </div>
       </aside>
@@ -159,13 +193,17 @@ export default function DashboardLayout({
                 <Sun className="h-5 w-5 hidden dark:block" />
                 <Moon className="h-5 w-5 block dark:hidden" />
               </Button>
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium">Roberto Sánchez</p>
-                <p className="text-xs text-muted-foreground">Administrador</p>
-              </div>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
-                RS
-              </div>
+              {user && (
+                <>
+                  <div className="hidden sm:block text-right">
+                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{getRoleLabel(user.role)}</p>
+                  </div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
+                    {getUserInitials(user.name)}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -174,5 +212,6 @@ export default function DashboardLayout({
         <main className="p-4 lg:p-6">{children}</main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

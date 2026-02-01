@@ -58,7 +58,7 @@ export function AddToCartDialog({ product, open, onOpenChange }: AddToCartDialog
     );
     setSelectedAdditions([]);
     onOpenChange(false);
-    openCart();
+    // openCart();
   };
 
   const handleClose = () => {

@@ -1,6 +1,13 @@
-import { PrismaClient, DayOfWeek } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient, DayOfWeek } from "../src/generated/prisma/client";
+import bcrypt from "bcryptjs";
+import "dotenv/config";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log("🌱 Iniciando seed de la base de datos...");
@@ -234,18 +241,32 @@ async function main() {
   // ============================================================================
   console.log("👤 Creando usuario admin...");
 
-  await prisma.user.upsert({
-    where: { email: "admin@passao.com" },
-    update: {},
-    create: {
-      name: "Administrador",
-      email: "admin@passao.com",
-      phone: "3001234567",
-      password: "$2b$10$placeholder", // Cambiar por hash real
-      role: "admin",
-      status: "active",
-    },
+  const adminEmail = process.env.ADMIN_EMAIL || "admin@passao.com";
+  const adminPassword = process.env.ADMIN_PASSWORD || "teamovalentina14";
+
+  // Verificar si el usuario admin ya existe
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail },
   });
+
+  if (!existingAdmin) {
+    // Encriptar la contraseña
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
+
+    await prisma.user.create({
+      data: {
+        name: "Administrador",
+        email: adminEmail,
+        phone: "3001234567",
+        password: hashedPassword,
+        role: "admin",
+        status: "active",
+      },
+    });
+    console.log(`✅ Usuario admin creado: ${adminEmail}`);
+  } else {
+    console.log(`ℹ️ Usuario admin ya existe: ${adminEmail}`);
+  }
 
   console.log("✅ Seed completado exitosamente!");
 }
