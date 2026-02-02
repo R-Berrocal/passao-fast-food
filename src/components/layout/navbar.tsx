@@ -55,6 +55,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useBusinessConfig } from "@/hooks/use-business";
 import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from "@/lib/validations/auth";
+import { useMounted } from "@/hooks/use-mounted";
 
 export function Navbar() {
   const router = useRouter();
@@ -66,6 +67,7 @@ export function Navbar() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
+  const mounted = useMounted();
 
   const { user, isAuthenticated, isLoading, isSubmitting, error, login, register, logout, clearError } = useAuth();
   const { config } = useBusinessConfig();
@@ -108,6 +110,8 @@ export function Navbar() {
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", phone: "", password: "" },
   });
+
+  if (!mounted) return null;
 
   const navLinks = [
     { href: "#menu", label: "Menú", icon: UtensilsCrossed },
