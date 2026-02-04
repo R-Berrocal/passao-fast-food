@@ -198,17 +198,19 @@ export default function ProductsPage() {
                 className="pl-9"
               />
             </div>
-            <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-              <TabsList className="flex-wrap">
-                <TabsTrigger value="all">Todos ({products.length})</TabsTrigger>
-                {categories.map((cat) => (
-                  <TabsTrigger key={cat.id} value={cat.id}>
-                    {cat.name} (
-                    {products.filter((p) => p.categoryId === cat.id).length})
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+            <div className="w-full overflow-x-auto sm:w-auto">
+              <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                <TabsList className="inline-flex w-max">
+                  <TabsTrigger value="all">Todos ({products.length})</TabsTrigger>
+                  {categories.map((cat) => (
+                    <TabsTrigger key={cat.id} value={cat.id}>
+                      {cat.name} (
+                      {products.filter((p) => p.categoryId === cat.id).length})
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         </CardContent>
       </Card>

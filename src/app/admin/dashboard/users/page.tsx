@@ -22,7 +22,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -274,20 +273,22 @@ export default function UsersPage() {
                 className="pl-9"
               />
             </div>
-            <Tabs value={activeRole} onValueChange={setActiveRole}>
-              <TabsList>
-                <TabsTrigger value="all">Todos ({userStats.total})</TabsTrigger>
-                <TabsTrigger value="customer">
-                  Clientes ({userStats.customers})
-                </TabsTrigger>
-                <TabsTrigger value="staff">
-                  Personal ({userStats.staff})
-                </TabsTrigger>
-                <TabsTrigger value="admin">
-                  Admin ({userStats.admins})
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="w-full overflow-x-auto sm:w-auto">
+              <Tabs value={activeRole} onValueChange={setActiveRole}>
+                <TabsList className="inline-flex w-max">
+                  <TabsTrigger value="all">Todos ({userStats.total})</TabsTrigger>
+                  <TabsTrigger value="customer">
+                    Clientes ({userStats.customers})
+                  </TabsTrigger>
+                  <TabsTrigger value="staff">
+                    Personal ({userStats.staff})
+                  </TabsTrigger>
+                  <TabsTrigger value="admin">
+                    Admin ({userStats.admins})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -295,8 +296,8 @@ export default function UsersPage() {
       {/* Users Table */}
       <Card>
         <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-480px)]">
-            <Table>
+          <div className="max-h-[calc(100vh-480px)] overflow-auto">
+            <Table className="min-w-[700px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Usuario</TableHead>
@@ -405,20 +406,20 @@ export default function UsersPage() {
                 ))}
               </TableBody>
             </Table>
-            {filteredUsers.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <UserIcon className="h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">
-                  No se encontraron usuarios
-                </h3>
-                <p className="text-muted-foreground">
-                  {users.length === 0
-                    ? "Crea tu primer usuario para comenzar"
-                    : "Intenta ajustar los filtros de búsqueda"}
-                </p>
-              </div>
-            )}
-          </ScrollArea>
+          </div>
+          {filteredUsers.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <UserIcon className="h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-semibold">
+                No se encontraron usuarios
+              </h3>
+              <p className="text-muted-foreground">
+                {users.length === 0
+                  ? "Crea tu primer usuario para comenzar"
+                  : "Intenta ajustar los filtros de búsqueda"}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -5,7 +5,6 @@ import { Upload, X, Loader2, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { uploadProductImage, deleteProductImage } from "@/lib/storage";
-import Image from "next/image";
 
 interface ImageUploadProps {
   value?: string;
@@ -124,7 +123,7 @@ export function ImageUpload({
 
       {displayUrl ? (
         <div className="relative overflow-hidden rounded-lg border">
-          <Image
+          <img
             src={displayUrl}
             alt="Vista previa"
             className={cn(

@@ -75,17 +75,12 @@ function OrderCard({
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-3">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${statusConfig.color} text-white`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${statusConfig.color} text-white`}
             >
               <StatusIcon status={order.status} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{order.orderNumber}</span>
-                <Badge variant="outline" className="capitalize">
-                  {order.type === "delivery" ? "Domicilio" : "Recoger"}
-                </Badge>
-              </div>
+              <span className="font-semibold">{order.orderNumber}</span>
               <p className="text-sm text-muted-foreground">
                 {new Date(order.createdAt).toLocaleString("es-CO", {
                   hour: "2-digit",
@@ -96,9 +91,14 @@ function OrderCard({
               </p>
             </div>
           </div>
-          <Badge variant="secondary" className={`${statusConfig.color} text-white`}>
-            {statusConfig.text}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant="secondary" className={`${statusConfig.color} text-white`}>
+              {statusConfig.text}
+            </Badge>
+            <Badge variant="outline">
+              {order.type === "delivery" ? "Domicilio" : "Recoger"}
+            </Badge>
+          </div>
         </div>
 
         <div className="p-4">
@@ -152,8 +152,8 @@ function OrderCard({
               {formatPrice(order.total)}
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onView}>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={onView} className="h-9">
               <Eye className="mr-2 h-4 w-4" />
               Ver
             </Button>
@@ -163,7 +163,7 @@ function OrderCard({
                 onValueChange={(value) => onStatusChange(value as OrderStatus)}
                 disabled={isUpdating}
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="h-9 w-[130px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -319,20 +319,22 @@ export default function OrdersPage() {
                 className="pl-9"
               />
             </div>
-            <Tabs value={activeStatus} onValueChange={setActiveStatus}>
-              <TabsList>
-                <TabsTrigger value="all">Todos ({orders.length})</TabsTrigger>
-                <TabsTrigger value="pending">
-                  Pendientes ({orderStats.pending})
-                </TabsTrigger>
-                <TabsTrigger value="preparing">
-                  Preparando ({orderStats.preparing})
-                </TabsTrigger>
-                <TabsTrigger value="ready">
-                  Listos ({orderStats.ready})
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="w-full overflow-x-auto sm:w-auto">
+              <Tabs value={activeStatus} onValueChange={setActiveStatus}>
+                <TabsList className="inline-flex w-max">
+                  <TabsTrigger value="all">Todos ({orders.length})</TabsTrigger>
+                  <TabsTrigger value="pending">
+                    Pendientes ({orderStats.pending})
+                  </TabsTrigger>
+                  <TabsTrigger value="preparing">
+                    Preparando ({orderStats.preparing})
+                  </TabsTrigger>
+                  <TabsTrigger value="ready">
+                    Listos ({orderStats.ready})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
           </div>
         </CardContent>
       </Card>
