@@ -251,7 +251,7 @@ async function main() {
 
   const adminEmail = process.env.ADMIN_EMAIL || "admin@passao.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "teamovalentina14";
-  const adminPhone = "3001234567";
+  const adminPhone = process.env.ADMIN_PHONE || "+573001234567";
 
   // Verificar si el usuario admin ya existe (por teléfono)
   const existingAdmin = await prisma.user.findUnique({
