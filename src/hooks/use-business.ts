@@ -7,7 +7,7 @@ import {
   fetchBusinessHours,
   updateBusinessConfig as updateBusinessConfigFn,
   updateBusinessHours as updateBusinessHoursFn,
-} from "@/lib/fetch-functions-business";
+} from "@/lib/fetch-functions/business";
 import type { BusinessConfig, BusinessHours } from "@/types/models";
 
 // ============================================================================

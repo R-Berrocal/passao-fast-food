@@ -8,7 +8,7 @@ import {
   createCategory as createCategoryFn,
   updateCategory as updateCategoryFn,
   deleteCategory as deleteCategoryFn,
-} from "@/lib/fetch-functions-categories";
+} from "@/lib/fetch-functions/categories";
 import type { Category } from "@/types/models";
 
 interface CategoryWithCount extends Category {

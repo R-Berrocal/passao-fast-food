@@ -8,7 +8,7 @@ import {
   createAddition as createAdditionFn,
   updateAddition as updateAdditionFn,
   deleteAddition as deleteAdditionFn,
-} from "@/lib/fetch-functions-additions";
+} from "@/lib/fetch-functions/additions";
 import type { Addition } from "@/types/models";
 
 export function useAddition(id: string | null) {

@@ -8,7 +8,7 @@ import {
   createUser as createUserFn,
   updateUser as updateUserFn,
   deleteUser as deleteUserFn,
-} from "@/lib/fetch-functions-users";
+} from "@/lib/fetch-functions/users";
 import type { User, UserRole, UserStatus } from "@/types/models";
 
 interface UserWithCount extends Omit<User, "password"> {

@@ -8,7 +8,7 @@ import {
   createProduct as createProductFn,
   updateProduct as updateProductFn,
   deleteProduct as deleteProductFn,
-} from "@/lib/fetch-functions-products";
+} from "@/lib/fetch-functions/products";
 import type { Product, Category } from "@/types/models";
 
 interface ProductWithCategory extends Product {

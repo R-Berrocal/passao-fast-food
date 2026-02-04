@@ -5,10 +5,10 @@ import { MenuList } from "@/components/menu/menu-list";
 import { Footer } from "@/components/layout/footer";
 import { getQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
-import { fetchAdditions } from "@/lib/fetch-functions-additions";
-import { fetchProducts } from "@/lib/fetch-functions-products";
-import { fetchCategories } from "@/lib/fetch-functions-categories";
-import { fetchBusinessConfig, fetchBusinessHours } from "@/lib/fetch-functions-business";
+import { fetchAdditions } from "@/lib/fetch-functions/additions";
+import { fetchProducts } from "@/lib/fetch-functions/products";
+import { fetchCategories } from "@/lib/fetch-functions/categories";
+import { fetchBusinessConfig, fetchBusinessHours } from "@/lib/fetch-functions/business";
 
 export default async function Home() {
   const queryClient = getQueryClient();

@@ -6,7 +6,7 @@ import {
   fetchOrders,
   updateOrderStatus as updateOrderStatusFn,
   createOrder as createOrderFn,
-} from "@/lib/fetch-functions-orders";
+} from "@/lib/fetch-functions/orders";
 import type { OrderStatus } from "@/types/models";
 import type { CreateOrderInput } from "@/lib/validations/order";
 
