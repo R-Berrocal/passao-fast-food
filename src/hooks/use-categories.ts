@@ -1,9 +1,15 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuthHeaders } from "@/stores/use-auth-store";
 import { queryKeys } from "@/lib/query-keys";
-import type { Category, ApiResponse } from "@/types/models";
+import {
+  fetchCategories,
+  fetchCategory,
+  createCategory as createCategoryFn,
+  updateCategory as updateCategoryFn,
+  deleteCategory as deleteCategoryFn,
+} from "@/lib/fetch-functions-categories";
+import type { Category } from "@/types/models";
 
 interface CategoryWithCount extends Category {
   _count: {
@@ -11,33 +17,10 @@ interface CategoryWithCount extends Category {
   };
 }
 
-// Fetch functions
-async function fetchCategory(id: string): Promise<CategoryWithCount> {
-  const response = await fetch(`/api/categories/${id}`);
-  const result: ApiResponse<CategoryWithCount> = await response.json();
-
-  if (!result.success || !result.data) {
-    throw new Error(result.error || "Categoría no encontrada");
-  }
-
-  return result.data;
-}
-
-async function fetchCategories(): Promise<CategoryWithCount[]> {
-  const response = await fetch("/api/categories");
-  const result: ApiResponse<CategoryWithCount[]> = await response.json();
-
-  if (!result.success || !result.data) {
-    throw new Error(result.error || "Error al cargar categorías");
-  }
-
-  return result.data;
-}
-
 export function useCategory(id: string | null) {
   const query = useQuery({
     queryKey: queryKeys.categories.detail(id!),
-    queryFn: () => fetchCategory(id!),
+    queryFn: () => fetchCategory(id!) as Promise<CategoryWithCount>,
     enabled: !!id,
   });
 
@@ -53,29 +36,13 @@ export function useCategories() {
 
   const query = useQuery({
     queryKey: queryKeys.categories.list(),
-    queryFn: () => fetchCategories(),
+    queryFn: () => fetchCategories() as Promise<CategoryWithCount[]>,
   });
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (data: Partial<Category>): Promise<CategoryWithCount> => {
-      const response = await fetch("/api/categories", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<CategoryWithCount> = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || "Error al crear categoría");
-      }
-
-      return result.data;
-    },
+    mutationFn: (data: Partial<Category>) =>
+      createCategoryFn(data) as Promise<CategoryWithCount>,
     onMutate: async (newCategory) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.categories.lists() });
 
@@ -134,30 +101,8 @@ export function useCategories() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Partial<Category>;
-    }): Promise<CategoryWithCount> => {
-      const response = await fetch(`/api/categories/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<CategoryWithCount> = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || "Error al actualizar categoría");
-      }
-
-      return result.data;
-    },
+    mutationFn: ({ id, data }: { id: string; data: Partial<Category> }) =>
+      updateCategoryFn(id, data) as Promise<CategoryWithCount>,
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.categories.lists() });
       await queryClient.cancelQueries({
@@ -214,18 +159,7 @@ export function useCategories() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: string): Promise<void> => {
-      const response = await fetch(`/api/categories/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-
-      const result: ApiResponse<void> = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "Error al eliminar categoría");
-      }
-    },
+    mutationFn: (id: string) => deleteCategoryFn(id),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.categories.lists() });
 
