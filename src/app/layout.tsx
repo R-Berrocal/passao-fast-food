@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Passao - Comida Rápida",
-  description: "Las mejores arepas, perros, patacones y más de Barranquilla",
+  description: "Las mejores arepas, perros, patacones y más de Montería",
 };
 
 export default function RootLayout({

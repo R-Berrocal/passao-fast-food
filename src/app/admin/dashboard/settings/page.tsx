@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { useBusinessConfig, useBusinessHours } from "@/hooks/use-business";
 import { businessConfigSchema, type BusinessConfigInput } from "@/lib/validations/business";
 import type { BusinessHours, DayOfWeek } from "@/types/models";
@@ -171,7 +172,7 @@ export default function SettingsPage() {
                     <Label htmlFor="city">Ciudad</Label>
                     <Input
                       id="city"
-                      placeholder="Barranquilla"
+                      placeholder="Montería"
                       {...form.register("city")}
                     />
                   </div>
@@ -196,24 +197,12 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="logoUrl">URL del Logo (opcional)</Label>
-                  <Input
-                    id="logoUrl"
-                    placeholder="https://..."
-                    {...form.register("logoUrl")}
+                  <Label>Logo del Negocio (opcional)</Label>
+                  <ImageUpload
+                    value={form.watch("logoUrl") || ""}
+                    onChange={(url) => form.setValue("logoUrl", url)}
+                    disabled={isSubmitting}
                   />
-                  {form.watch("logoUrl") && (
-                    <div className="mt-2">
-                      <img
-                        src={form.watch("logoUrl")}
-                        alt="Logo preview"
-                        className="h-16 w-16 rounded-lg object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>

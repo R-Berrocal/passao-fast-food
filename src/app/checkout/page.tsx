@@ -563,7 +563,7 @@ export default function CheckoutPage() {
                         <CardContent className="p-4">
                           <h4 className="font-semibold">Dirección del local</h4>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            {config?.address ? `${config.address}, ${config.city}` : "Barranquilla, Colombia"}
+                            {config?.address ? `${config.address}, ${config.city}` : "Montería, Colombia"}
                           </p>
                           <p className="mt-2 text-sm text-muted-foreground">
                             Horario hoy: {getBusinessHoursText()}
