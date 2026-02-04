@@ -238,18 +238,27 @@ interface ApiResponse<T> {
 
 ## 🌐 Variables de Entorno
 
-Crear un archivo `.env` basado en `.env.example`:
+Crear un archivo `.env` basado en `exampl.env`:
 
 ```env
 # Database
-DATABASE_URL="postgresql://user:password@localhost:5432/passao_db"
-DIRECT_URL="postgresql://user:password@localhost:5432/passao_db"
+DATABASE_URL=
 
-# App
-NEXT_PUBLIC_API_URL="http://localhost:3000"
+# Direct connection to the database. Used for migrations
+DIRECT_URL=
 
-# JWT
-JWT_SECRET="your-secret-key"
+# Auth (para JWT)
+JWT_SECRET=
+JWT_EXPIRES_IN=
+
+# Admin
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+ADMIN_PHONE=
+
+#Supabase Storage
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 ---
