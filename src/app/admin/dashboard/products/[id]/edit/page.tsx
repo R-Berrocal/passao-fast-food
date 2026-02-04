@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ImageUpload } from "@/components/ui/image-upload";
 import {
   Select,
   SelectContent,
@@ -189,11 +190,11 @@ export default function EditProductPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="image">URL de Imagen *</Label>
-                <Input
-                  id="image"
-                  placeholder="https://images.unsplash.com/..."
-                  {...form.register("image")}
+                <Label>Imagen del Producto *</Label>
+                <ImageUpload
+                  value={form.watch("image")}
+                  onChange={(url) => form.setValue("image", url, { shouldValidate: true })}
+                  disabled={isSubmitting}
                 />
                 {form.formState.errors.image && (
                   <p className="text-sm text-destructive">
@@ -246,23 +247,6 @@ export default function EditProductPage() {
                   onCheckedChange={(checked) => form.setValue("isAvailable", checked)}
                 />
               </div>
-
-              {form.watch("image") && (
-                <div className="space-y-2">
-                  <Label>Vista previa</Label>
-                  <div className="overflow-hidden rounded-lg border">
-                    <img
-                      src={form.watch("image")}
-                      alt="Vista previa"
-                      className="h-48 w-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "https://via.placeholder.com/400x300?text=Imagen+no+disponible";
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
 
               {error && (
                 <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
