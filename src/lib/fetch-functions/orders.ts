@@ -4,8 +4,8 @@
 
 import type { Order, OrderWithItems, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
+import { getBaseUrl } from "@/lib/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 // ============================================================================
 // QUERY FUNCTIONS
@@ -23,7 +23,7 @@ export async function fetchOrders(options?: FetchOrdersOptions): Promise<OrderWi
   if (options?.type) params.set("type", options.type);
   if (options?.date) params.set("date", options.date);
 
-  const response = await fetch(`${API_URL}/api/orders?${params.toString()}`, {
+  const response = await fetch(`${getBaseUrl()}/api/orders?${params.toString()}`, {
     cache: "no-store", // Orders are dynamic, no cache
     headers: getAuthHeaders(),
   });
@@ -37,7 +37,7 @@ export async function fetchOrders(options?: FetchOrdersOptions): Promise<OrderWi
 }
 
 export async function fetchOrder(id: string): Promise<Order> {
-  const response = await fetch(`${API_URL}/api/orders/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/orders/${id}`, {
     cache: "no-store", // Orders are dynamic, no cache
     headers: getAuthHeaders(),
   });
@@ -59,7 +59,7 @@ export async function updateOrderStatus(
   status: string,
   adminNotes?: string
 ): Promise<Order> {
-  const response = await fetch(`${API_URL}/api/orders/${id}/status`, {
+  const response = await fetch(`${getBaseUrl()}/api/orders/${id}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -78,7 +78,7 @@ export async function updateOrderStatus(
 }
 
 export async function createOrder(data: unknown): Promise<Order> {
-  const response = await fetch(`${API_URL}/api/orders`, {
+  const response = await fetch(`${getBaseUrl()}/api/orders`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

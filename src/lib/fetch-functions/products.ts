@@ -4,8 +4,8 @@
 
 import type { Product, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
+import { getBaseUrl } from "@/lib/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const PUBLIC_DATA_REVALIDATE = 60; // 1 minute
 
 // ============================================================================
@@ -28,7 +28,7 @@ export async function fetchProducts(
   if (options?.isAvailable !== undefined)
     params.set("isAvailable", String(options.isAvailable));
 
-  const response = await fetch(`${API_URL}/api/products?${params.toString()}`, {
+  const response = await fetch(`${getBaseUrl()}/api/products?${params.toString()}`, {
     next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Product[]> = await response.json();
@@ -41,7 +41,7 @@ export async function fetchProducts(
 }
 
 export async function fetchProduct(id: string): Promise<Product> {
-  const response = await fetch(`${API_URL}/api/products/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/products/${id}`, {
     next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Product> = await response.json();
@@ -58,7 +58,7 @@ export async function fetchProduct(id: string): Promise<Product> {
 // ============================================================================
 
 export async function createProduct(data: Partial<Product>): Promise<Product> {
-  const response = await fetch(`${API_URL}/api/products`, {
+  const response = await fetch(`${getBaseUrl()}/api/products`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export async function updateProduct(
   id: string,
   data: Partial<Product>
 ): Promise<Product> {
-  const response = await fetch(`${API_URL}/api/products/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/products/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -99,7 +99,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/api/products/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/products/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

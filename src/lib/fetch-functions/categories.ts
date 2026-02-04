@@ -4,8 +4,8 @@
 
 import type { Category, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
+import { getBaseUrl } from "@/lib/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const PUBLIC_DATA_REVALIDATE = 60; // 1 minute
 
 // ============================================================================
@@ -13,7 +13,7 @@ const PUBLIC_DATA_REVALIDATE = 60; // 1 minute
 // ============================================================================
 
 export async function fetchCategories(): Promise<Category[]> {
-  const response = await fetch(`${API_URL}/api/categories`, {
+  const response = await fetch(`${getBaseUrl()}/api/categories`, {
     next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Category[]> = await response.json();
@@ -26,7 +26,7 @@ export async function fetchCategories(): Promise<Category[]> {
 }
 
 export async function fetchCategory(id: string): Promise<Category> {
-  const response = await fetch(`${API_URL}/api/categories/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/categories/${id}`, {
     next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Category> = await response.json();
@@ -43,7 +43,7 @@ export async function fetchCategory(id: string): Promise<Category> {
 // ============================================================================
 
 export async function createCategory(data: Partial<Category>): Promise<Category> {
-  const response = await fetch(`${API_URL}/api/categories`, {
+  const response = await fetch(`${getBaseUrl()}/api/categories`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -65,7 +65,7 @@ export async function updateCategory(
   id: string,
   data: Partial<Category>
 ): Promise<Category> {
-  const response = await fetch(`${API_URL}/api/categories/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/categories/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -84,7 +84,7 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/api/categories/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/categories/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

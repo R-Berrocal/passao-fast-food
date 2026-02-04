@@ -4,8 +4,8 @@
 
 import type { Addition, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
+import { getBaseUrl } from "@/lib/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const PUBLIC_DATA_REVALIDATE = 60; // 1 minute
 
 // ============================================================================
@@ -18,7 +18,7 @@ export async function fetchAdditions(
   const params = new URLSearchParams();
   if (showAll) params.set("all", "true");
 
-  const response = await fetch(`${API_URL}/api/additions?${params.toString()}`, {
+  const response = await fetch(`${getBaseUrl()}/api/additions?${params.toString()}`, {
     next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Addition[]> = await response.json();
@@ -31,7 +31,7 @@ export async function fetchAdditions(
 }
 
 export async function fetchAddition(id: string): Promise<Addition> {
-  const response = await fetch(`${API_URL}/api/additions/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/additions/${id}`, {
     next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Addition> = await response.json();
@@ -48,7 +48,7 @@ export async function fetchAddition(id: string): Promise<Addition> {
 // ============================================================================
 
 export async function createAddition(data: Partial<Addition>): Promise<Addition> {
-  const response = await fetch(`${API_URL}/api/additions`, {
+  const response = await fetch(`${getBaseUrl()}/api/additions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -70,7 +70,7 @@ export async function updateAddition(
   id: string,
   data: Partial<Addition>
 ): Promise<Addition> {
-  const response = await fetch(`${API_URL}/api/additions/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/additions/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -89,7 +89,7 @@ export async function updateAddition(
 }
 
 export async function deleteAddition(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/api/additions/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/additions/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });

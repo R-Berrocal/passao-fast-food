@@ -4,8 +4,8 @@
 
 import type { BusinessConfig, BusinessHours, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
+import { getBaseUrl } from "@/lib/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const PUBLIC_DATA_REVALIDATE = 60; // 1 minute
 
 // ============================================================================
@@ -13,7 +13,7 @@ const PUBLIC_DATA_REVALIDATE = 60; // 1 minute
 // ============================================================================
 
 export async function fetchBusinessConfig(): Promise<BusinessConfig> {
-  const response = await fetch(`${API_URL}/api/business/config`, {
+  const response = await fetch(`${getBaseUrl()}/api/business/config`, {
     next: { revalidate: PUBLIC_DATA_REVALIDATE }, // Cache with revalidation
   });
   const result: ApiResponse<BusinessConfig> = await response.json();
@@ -26,7 +26,7 @@ export async function fetchBusinessConfig(): Promise<BusinessConfig> {
 }
 
 export async function fetchBusinessHours(): Promise<BusinessHours[]> {
-  const response = await fetch(`${API_URL}/api/business/hours`, {
+  const response = await fetch(`${getBaseUrl()}/api/business/hours`, {
     next: { revalidate: PUBLIC_DATA_REVALIDATE }, // Cache with revalidation
   });
   const result: ApiResponse<BusinessHours[]> = await response.json();
@@ -45,7 +45,7 @@ export async function fetchBusinessHours(): Promise<BusinessHours[]> {
 export async function updateBusinessConfig(
   data: Partial<BusinessConfig>
 ): Promise<BusinessConfig> {
-  const response = await fetch(`${API_URL}/api/business/config`, {
+  const response = await fetch(`${getBaseUrl()}/api/business/config`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -66,7 +66,7 @@ export async function updateBusinessConfig(
 export async function updateBusinessHours(
   data: BusinessHours[]
 ): Promise<BusinessHours[]> {
-  const response = await fetch(`${API_URL}/api/business/hours`, {
+  const response = await fetch(`${getBaseUrl()}/api/business/hours`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",

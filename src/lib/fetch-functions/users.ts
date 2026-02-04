@@ -4,8 +4,8 @@
 
 import type { User, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
+import { getBaseUrl } from "@/lib/utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 // ============================================================================
 // QUERY FUNCTIONS
@@ -21,7 +21,7 @@ export async function fetchUsers(options?: FetchUsersOptions): Promise<User[]> {
   if (options?.role) params.set("role", options.role);
   if (options?.status) params.set("status", options.status);
 
-  const response = await fetch(`${API_URL}/api/users?${params.toString()}`, {
+  const response = await fetch(`${getBaseUrl()}/api/users?${params.toString()}`, {
     cache: "no-store", // Users are dynamic, no cache
     headers: getAuthHeaders(),
   });
@@ -35,7 +35,7 @@ export async function fetchUsers(options?: FetchUsersOptions): Promise<User[]> {
 }
 
 export async function fetchUser(id: string): Promise<User> {
-  const response = await fetch(`${API_URL}/api/users/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/users/${id}`, {
     cache: "no-store", // Users are dynamic, no cache
     headers: getAuthHeaders(),
   });
@@ -55,7 +55,7 @@ export async function fetchUser(id: string): Promise<User> {
 export async function createUser(
   data: Partial<User> & { password?: string }
 ): Promise<User> {
-  const response = await fetch(`${API_URL}/api/users`, {
+  const response = await fetch(`${getBaseUrl()}/api/users`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -77,7 +77,7 @@ export async function updateUser(
   id: string,
   data: Partial<User> & { password?: string }
 ): Promise<User> {
-  const response = await fetch(`${API_URL}/api/users/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/users/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -96,7 +96,7 @@ export async function updateUser(
 }
 
 export async function deleteUser(id: string): Promise<void> {
-  const response = await fetch(`${API_URL}/api/users/${id}`, {
+  const response = await fetch(`${getBaseUrl()}/api/users/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
