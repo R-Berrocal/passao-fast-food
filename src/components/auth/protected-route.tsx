@@ -14,7 +14,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({
   children,
   allowedRoles = ["admin", "staff", "customer"],
-  redirectTo = "/?authRequired=true",
+  redirectTo = "/admin/login",
 }: ProtectedRouteProps) {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuthStore();
@@ -36,7 +36,7 @@ export function ProtectedRoute({
 
     if (!allowedRoles.includes(user.role)) {
       hasRedirected.current = true;
-      router.push("/?unauthorized=true");
+      router.push("/admin/login?unauthorized=true");
     }
   }, [isAuthenticated, isLoading, user, allowedRoles, router, redirectTo]);
 

@@ -2,6 +2,7 @@
 
 import { useCategories } from "@/hooks/use-categories";
 import { useProducts } from "@/hooks/use-products";
+import { useAdditions } from "@/hooks/use-additions";
 import { MenuSection } from "./menu-section";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -11,8 +12,9 @@ export function MenuList() {
     isActive: true,
     isAvailable: true,
   });
+  const { additions, isLoading: additionsLoading } = useAdditions();
 
-  const isLoading = categoriesLoading || productsLoading;
+  const isLoading = categoriesLoading || productsLoading || additionsLoading;
 
   if (isLoading) {
     return (
@@ -60,7 +62,7 @@ export function MenuList() {
 
         <div className="space-y-16">
           {categoriesWithProducts.map((category) => (
-            <MenuSection key={category.id} category={category} />
+            <MenuSection key={category.id} category={category} additions={additions} />
           ))}
         </div>
       </div>

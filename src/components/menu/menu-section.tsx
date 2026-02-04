@@ -1,4 +1,4 @@
-import type { Category, Product } from "@/types/models";
+import type { Addition, Category, Product } from "@/types/models";
 import { MenuItem } from "./menu-item";
 
 interface CategoryWithProducts extends Category {
@@ -7,9 +7,10 @@ interface CategoryWithProducts extends Category {
 
 interface MenuSectionProps {
   category: CategoryWithProducts;
+  additions: Addition[];
 }
 
-export function MenuSection({ category }: MenuSectionProps) {
+export function MenuSection({ category, additions }: MenuSectionProps) {
   return (
     <section id={category.slug} className="scroll-mt-20">
       <div className="mb-6">
@@ -21,7 +22,7 @@ export function MenuSection({ category }: MenuSectionProps) {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {category.products.map((product) => (
-          <MenuItem key={product.id} product={product} />
+          <MenuItem key={product.id} product={product} additions={additions} />
         ))}
       </div>
     </section>

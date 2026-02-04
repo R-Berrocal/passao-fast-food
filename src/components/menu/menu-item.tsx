@@ -5,15 +5,16 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { Product } from "@/types/models";
+import type { Addition, Product } from "@/types/models";
 import { formatPrice } from "@/stores/use-cart-store";
 import { AddToCartDialog } from "./add-to-cart-dialog";
 
 interface MenuItemProps {
   product: Product;
+  additions: Addition[];
 }
 
-export function MenuItem({ product }: MenuItemProps) {
+export function MenuItem({ product, additions }: MenuItemProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -58,6 +59,7 @@ export function MenuItem({ product }: MenuItemProps) {
 
       <AddToCartDialog
         product={product}
+        additions={additions}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />

@@ -48,10 +48,14 @@ export async function proxy(request: NextRequest) {
 
   const token = getTokenFromCookieOrHeader(request);
 
-  // If no token, redirect to home with login prompt
+  // Allow access to login page without authentication
+  if (pathname === "/admin/login") {
+    return NextResponse.next();
+  }
+
+  // If no token, redirect to login page
   if (!token) {
-    const url = new URL("/", request.url);
-    url.searchParams.set("authRequired", "true");
+    const url = new URL("/admin/login", request.url);
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
@@ -60,15 +64,14 @@ export async function proxy(request: NextRequest) {
   const payload = await verifyToken(token);
 
   if (!payload) {
-    const url = new URL("/", request.url);
-    url.searchParams.set("authRequired", "true");
+    const url = new URL("/admin/login", request.url);
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
   // Check if user has admin or staff role for /admin routes
   if (payload.role !== "admin" && payload.role !== "staff") {
-    const url = new URL("/", request.url);
+    const url = new URL("/admin/login", request.url);
     url.searchParams.set("unauthorized", "true");
     return NextResponse.redirect(url);
   }
