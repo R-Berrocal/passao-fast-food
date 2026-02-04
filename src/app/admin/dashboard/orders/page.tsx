@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { useOrders } from "@/hooks/use-orders";
 import { formatPrice } from "@/stores/use-cart-store";
-import { ORDER_STATUS_CONFIG, type OrderStatus } from "@/types/models";
+import { ORDER_STATUS_CONFIG, type OrderStatus, type OrderWithItems } from "@/types/models";
 
 function StatusIcon({ status }: { status: OrderStatus }) {
   switch (status) {
@@ -54,31 +54,6 @@ function StatusIcon({ status }: { status: OrderStatus }) {
     case "cancelled":
       return <XCircle className="h-4 w-4" />;
   }
-}
-
-interface OrderWithItems {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  customerPhone: string;
-  customerEmail?: string | null;
-  type: "delivery" | "pickup";
-  deliveryAddress?: string | null;
-  subtotal: number;
-  deliveryFee: number;
-  total: number;
-  status: OrderStatus;
-  notes?: string | null;
-  paymentMethod: string;
-  createdAt: Date | string;
-  items: {
-    id: string;
-    productName: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-    additions: { additionName: string; price: number }[];
-  }[];
 }
 
 function OrderCard({
@@ -368,8 +343,8 @@ export default function OrdersPage() {
           {filteredOrders.map((order) => (
             <OrderCard
               key={order.id}
-              order={order as OrderWithItems}
-              onView={() => handleViewOrder(order as OrderWithItems)}
+              order={order}
+              onView={() => handleViewOrder(order)}
               onStatusChange={(status) => handleStatusChange(order.id, status)}
               isUpdating={updatingOrderId === order.id}
             />

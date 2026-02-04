@@ -158,6 +158,13 @@ export interface OrderItemAddition {
   price: number; // Precio al momento de la orden
 }
 
+// Order with items included (returned by API)
+export interface OrderWithItems extends Order {
+  items: (OrderItem & {
+    additions: OrderItemAddition[];
+  })[];
+}
+
 // ============================================================================
 // BUSINESS CONFIG
 // ============================================================================

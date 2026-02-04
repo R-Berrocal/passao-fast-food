@@ -2,7 +2,7 @@
  * Orders fetch functions for server and client-side data fetching
  */
 
-import type { Order, ApiResponse } from "@/types/models";
+import type { Order, OrderWithItems, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
@@ -17,7 +17,7 @@ interface FetchOrdersOptions {
   date?: string;
 }
 
-export async function fetchOrders(options?: FetchOrdersOptions): Promise<Order[]> {
+export async function fetchOrders(options?: FetchOrdersOptions): Promise<OrderWithItems[]> {
   const params = new URLSearchParams();
   if (options?.status) params.set("status", options.status);
   if (options?.type) params.set("type", options.type);
@@ -27,7 +27,7 @@ export async function fetchOrders(options?: FetchOrdersOptions): Promise<Order[]
     cache: "no-store", // Orders are dynamic, no cache
     headers: getAuthHeaders(),
   });
-  const result: ApiResponse<Order[]> = await response.json();
+  const result: ApiResponse<OrderWithItems[]> = await response.json();
 
   if (!result.success || !result.data) {
     throw new Error(result.error || "Error al cargar órdenes");
