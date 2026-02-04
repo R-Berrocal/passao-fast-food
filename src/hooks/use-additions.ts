@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthHeaders } from "@/stores/use-auth-store";
+import { queryKeys } from "@/lib/query-keys";
 import type { Addition } from "@/types/models";
 
 interface ApiResponse<T> {
@@ -10,41 +11,44 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+// Fetch functions
+async function fetchAddition(id: string): Promise<Addition> {
+  const response = await fetch(`/api/additions/${id}`);
+  const result: ApiResponse<Addition> = await response.json();
+
+  if (!result.success || !result.data) {
+    throw new Error(result.error || "Adición no encontrada");
+  }
+
+  return result.data;
+}
+
+async function fetchAdditions(showAll: boolean = false): Promise<Addition[]> {
+  const params = new URLSearchParams();
+  if (showAll) params.set("all", "true");
+
+  const response = await fetch(`/api/additions?${params.toString()}`);
+  const result: ApiResponse<Addition[]> = await response.json();
+
+  if (!result.success || !result.data) {
+    throw new Error(result.error || "Error al cargar adiciones");
+  }
+
+  return result.data;
+}
+
 export function useAddition(id: string | null) {
-  const [addition, setAddition] = useState<Addition | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: queryKeys.additions.detail(id!),
+    queryFn: () => fetchAddition(id!),
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    if (!id) {
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchAddition = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/additions/${id}`);
-        const result: ApiResponse<Addition> = await response.json();
-
-        if (result.success && result.data) {
-          setAddition(result.data);
-        } else {
-          setError(result.error || "Adición no encontrada");
-        }
-      } catch {
-        setError("Error de conexión");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchAddition();
-  }, [id]);
-
-  return { addition, isLoading, error };
+  return {
+    addition: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error?.message ?? null,
+  };
 }
 
 interface UseAdditionsOptions {
@@ -53,41 +57,16 @@ interface UseAdditionsOptions {
 
 export function useAdditions(options: UseAdditionsOptions = {}) {
   const { showAll = false } = options;
-  const [additions, setAdditions] = useState<Addition[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchAdditions = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  const query = useQuery({
+    queryKey: queryKeys.additions.list({ showAll }),
+    queryFn: () => fetchAdditions(showAll),
+  });
 
-    try {
-      const params = new URLSearchParams();
-      if (showAll) params.set("all", "true");
-
-      const response = await fetch(`/api/additions?${params.toString()}`);
-      const result: ApiResponse<Addition[]> = await response.json();
-
-      if (result.success && result.data) {
-        setAdditions(result.data);
-      } else {
-        setError(result.error || "Error al cargar adiciones");
-      }
-    } catch {
-      setError("Error de conexión");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [showAll]);
-
-  useEffect(() => {
-    fetchAdditions();
-  }, [fetchAdditions]);
-
-  const createAddition = async (
-    data: Partial<Addition>
-  ): Promise<Addition | null> => {
-    try {
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<Addition>): Promise<Addition> => {
       const response = await fetch("/api/additions", {
         method: "POST",
         headers: {
@@ -99,24 +78,81 @@ export function useAdditions(options: UseAdditionsOptions = {}) {
 
       const result: ApiResponse<Addition> = await response.json();
 
-      if (result.success && result.data) {
-        setAdditions((prev) => [...prev, result.data!]);
-        return result.data;
+      if (!result.success || !result.data) {
+        throw new Error(result.error || "Error al crear adición");
       }
 
-      setError(result.error || "Error al crear adición");
-      return null;
-    } catch {
-      setError("Error de conexión");
-      return null;
-    }
-  };
+      return result.data;
+    },
+    onMutate: async (newAddition) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.additions.lists() });
 
-  const updateAddition = async (
-    id: string,
-    data: Partial<Addition>
-  ): Promise<Addition | null> => {
-    try {
+      // Snapshot previous value
+      const previousAdditions = queryClient.getQueryData<Addition[]>(
+        queryKeys.additions.list({ showAll })
+      );
+
+      // Optimistically update with temporary ID
+      if (previousAdditions) {
+        const optimisticAddition: Addition = {
+          id: `temp-${Date.now()}`,
+          name: newAddition.name || "",
+          price: newAddition.price || 0,
+          image: newAddition.image || null,
+          isActive: newAddition.isActive ?? true,
+          displayOrder: newAddition.displayOrder || 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as Addition;
+
+        queryClient.setQueryData<Addition[]>(
+          queryKeys.additions.list({ showAll }),
+          [...previousAdditions, optimisticAddition]
+        );
+      }
+
+      return { previousAdditions };
+    },
+    onError: (_err, _newAddition, context) => {
+      // Rollback on error
+      if (context?.previousAdditions) {
+        queryClient.setQueryData(
+          queryKeys.additions.list({ showAll }),
+          context.previousAdditions
+        );
+      }
+    },
+    onSuccess: (newAddition) => {
+      // Replace temp addition with real one
+      const previousAdditions = queryClient.getQueryData<Addition[]>(
+        queryKeys.additions.list({ showAll })
+      );
+
+      if (previousAdditions) {
+        const withoutTemp = previousAdditions.filter(
+          (a) => !a.id.startsWith("temp-")
+        );
+        queryClient.setQueryData<Addition[]>(
+          queryKeys.additions.list({ showAll }),
+          [...withoutTemp, newAddition]
+        );
+      }
+
+      // Invalidate all addition queries to ensure consistency
+      queryClient.invalidateQueries({ queryKey: queryKeys.additions.lists() });
+    },
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<Addition>;
+    }): Promise<Addition> => {
       const response = await fetch(`/api/additions/${id}`, {
         method: "PUT",
         headers: {
@@ -128,23 +164,78 @@ export function useAdditions(options: UseAdditionsOptions = {}) {
 
       const result: ApiResponse<Addition> = await response.json();
 
-      if (result.success && result.data) {
-        setAdditions((prev) =>
-          prev.map((a) => (a.id === id ? result.data! : a))
-        );
-        return result.data;
+      if (!result.success || !result.data) {
+        throw new Error(result.error || "Error al actualizar adición");
       }
 
-      setError(result.error || "Error al actualizar adición");
-      return null;
-    } catch {
-      setError("Error de conexión");
-      return null;
-    }
-  };
+      return result.data;
+    },
+    onMutate: async ({ id, data }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.additions.lists() });
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.additions.detail(id),
+      });
 
-  const deleteAddition = async (id: string): Promise<boolean> => {
-    try {
+      // Snapshot previous values
+      const previousAdditions = queryClient.getQueryData<Addition[]>(
+        queryKeys.additions.list({ showAll })
+      );
+      const previousAddition = queryClient.getQueryData<Addition>(
+        queryKeys.additions.detail(id)
+      );
+
+      // Optimistically update list
+      if (previousAdditions) {
+        queryClient.setQueryData<Addition[]>(
+          queryKeys.additions.list({ showAll }),
+          previousAdditions.map((a) =>
+            a.id === id ? { ...a, ...data, updatedAt: new Date() } : a
+          )
+        );
+      }
+
+      // Optimistically update detail
+      if (previousAddition) {
+        queryClient.setQueryData<Addition>(queryKeys.additions.detail(id), {
+          ...previousAddition,
+          ...data,
+          updatedAt: new Date(),
+        });
+      }
+
+      return { previousAdditions, previousAddition };
+    },
+    onError: (_err, { id }, context) => {
+      // Rollback on error
+      if (context?.previousAdditions) {
+        queryClient.setQueryData(
+          queryKeys.additions.list({ showAll }),
+          context.previousAdditions
+        );
+      }
+      if (context?.previousAddition) {
+        queryClient.setQueryData(
+          queryKeys.additions.detail(id),
+          context.previousAddition
+        );
+      }
+    },
+    onSuccess: (updatedAddition) => {
+      // Update cache with server response
+      queryClient.setQueryData(
+        queryKeys.additions.detail(updatedAddition.id),
+        updatedAddition
+      );
+
+      // Invalidate all lists to ensure consistency
+      queryClient.invalidateQueries({ queryKey: queryKeys.additions.lists() });
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string): Promise<void> => {
       const response = await fetch(`/api/additions/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
@@ -152,27 +243,82 @@ export function useAdditions(options: UseAdditionsOptions = {}) {
 
       const result: ApiResponse<void> = await response.json();
 
-      if (result.success) {
-        setAdditions((prev) => prev.filter((a) => a.id !== id));
-        return true;
+      if (!result.success) {
+        throw new Error(result.error || "Error al eliminar adición");
+      }
+    },
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.additions.lists() });
+
+      // Snapshot previous value
+      const previousAdditions = queryClient.getQueryData<Addition[]>(
+        queryKeys.additions.list({ showAll })
+      );
+
+      // Optimistically remove from list
+      if (previousAdditions) {
+        queryClient.setQueryData<Addition[]>(
+          queryKeys.additions.list({ showAll }),
+          previousAdditions.filter((a) => a.id !== id)
+        );
       }
 
-      setError(result.error || "Error al eliminar adición");
-      return false;
-    } catch {
-      setError("Error de conexión");
-      return false;
-    }
-  };
+      return { previousAdditions };
+    },
+    onError: (_err, _id, context) => {
+      // Rollback on error
+      if (context?.previousAdditions) {
+        queryClient.setQueryData(
+          queryKeys.additions.list({ showAll }),
+          context.previousAdditions
+        );
+      }
+    },
+    onSuccess: (_data, id) => {
+      // Remove from detail cache
+      queryClient.removeQueries({ queryKey: queryKeys.additions.detail(id) });
+
+      // Invalidate all lists to ensure consistency
+      queryClient.invalidateQueries({ queryKey: queryKeys.additions.lists() });
+    },
+  });
 
   return {
-    additions,
-    isLoading,
-    error,
-    refetch: fetchAdditions,
-    createAddition,
-    updateAddition,
-    deleteAddition,
-    clearError: () => setError(null),
+    additions: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
+    createAddition: async (data: Partial<Addition>): Promise<Addition | null> => {
+      try {
+        return await createMutation.mutateAsync(data);
+      } catch {
+        return null;
+      }
+    },
+    updateAddition: async (
+      id: string,
+      data: Partial<Addition>
+    ): Promise<Addition | null> => {
+      try {
+        return await updateMutation.mutateAsync({ id, data });
+      } catch {
+        return null;
+      }
+    },
+    deleteAddition: async (id: string): Promise<boolean> => {
+      try {
+        await deleteMutation.mutateAsync(id);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    clearError: () => {
+      // Clear error by resetting mutations
+      createMutation.reset();
+      updateMutation.reset();
+      deleteMutation.reset();
+    },
   };
 }
