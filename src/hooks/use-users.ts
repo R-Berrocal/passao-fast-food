@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { getAuthHeaders } from "@/stores/use-auth-store";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import {
+  fetchUsers,
+  fetchUser,
+  createUser as createUserFn,
+  updateUser as updateUserFn,
+  deleteUser as deleteUserFn,
+} from "@/lib/fetch-functions-users";
 import type { User, UserRole, UserStatus } from "@/types/models";
 
 interface UserWithCount extends Omit<User, "password"> {
@@ -10,77 +17,60 @@ interface UserWithCount extends Omit<User, "password"> {
   };
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
 interface UseUsersOptions {
   role?: UserRole;
   status?: UserStatus;
 }
 
+// ============================================================================
+// Users List Hook
+// ============================================================================
+
 export function useUsers(options: UseUsersOptions = {}) {
-  const [users, setUsers] = useState<UserWithCount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Query for users list
+  const { data: users = [], isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.users.list(options),
+    queryFn: () => fetchUsers(options) as Promise<UserWithCount[]>,
+    staleTime: 5 * 60 * 1000, // 5 minutes (critical data, fresher)
+  });
 
-    try {
-      const params = new URLSearchParams();
-      if (options.role) params.set("role", options.role);
-      if (options.status) params.set("status", options.status);
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: (data: Partial<User> & { password?: string }) =>
+      createUserFn(data) as Promise<UserWithCount>,
+    onSuccess: () => {
+      // Invalidate all users queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all() });
+    },
+  });
 
-      const url = `/api/users${params.toString() ? `?${params}` : ""}`;
-      const response = await fetch(url, {
-        headers: getAuthHeaders(),
-      });
-      const result: ApiResponse<UserWithCount[]> = await response.json();
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<User> & { password?: string } }) =>
+      updateUserFn(id, data) as Promise<UserWithCount>,
+    onSuccess: () => {
+      // Invalidate all users queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all() });
+    },
+  });
 
-      if (result.success && result.data) {
-        setUsers(result.data);
-      } else {
-        setError(result.error || "Error al cargar usuarios");
-      }
-    } catch {
-      setError("Error de conexión");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [options.role, options.status]);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteUserFn(id),
+    onSuccess: () => {
+      // Invalidate all users queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all() });
+    },
+  });
 
   const createUser = async (
     data: Partial<User> & { password?: string }
   ): Promise<UserWithCount | null> => {
     try {
-      const response = await fetch("/api/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<UserWithCount> = await response.json();
-
-      if (result.success && result.data) {
-        await fetchUsers();
-        return result.data;
-      }
-
-      setError(result.error || "Error al crear usuario");
-      return null;
+      return await createMutation.mutateAsync(data);
     } catch {
-      setError("Error de conexión");
       return null;
     }
   };
@@ -90,48 +80,17 @@ export function useUsers(options: UseUsersOptions = {}) {
     data: Partial<User> & { password?: string }
   ): Promise<UserWithCount | null> => {
     try {
-      const response = await fetch(`/api/users/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<UserWithCount> = await response.json();
-
-      if (result.success && result.data) {
-        await fetchUsers();
-        return result.data;
-      }
-
-      setError(result.error || "Error al actualizar usuario");
-      return null;
+      return await updateMutation.mutateAsync({ id, data });
     } catch {
-      setError("Error de conexión");
       return null;
     }
   };
 
   const deleteUser = async (id: string): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/users/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-
-      const result: ApiResponse<void> = await response.json();
-
-      if (result.success) {
-        setUsers((prev) => prev.filter((u) => u.id !== id));
-        return true;
-      }
-
-      setError(result.error || "Error al eliminar usuario");
-      return false;
+      await deleteMutation.mutateAsync(id);
+      return true;
     } catch {
-      setError("Error de conexión");
       return false;
     }
   };
@@ -139,51 +98,34 @@ export function useUsers(options: UseUsersOptions = {}) {
   return {
     users,
     isLoading,
-    error,
-    refetch: fetchUsers,
+    error: error ? (error as Error).message : null,
+    refetch,
     createUser,
     updateUser,
     deleteUser,
-    clearError: () => setError(null),
+    clearError: () => {
+      createMutation.reset();
+      updateMutation.reset();
+      deleteMutation.reset();
+    },
   };
 }
 
+// ============================================================================
+// Single User Hook
+// ============================================================================
+
 export function useUser(id: string | null) {
-  const [user, setUser] = useState<UserWithCount | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: queryKeys.users.detail(id!),
+    queryFn: () => fetchUser(id!) as Promise<UserWithCount>,
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes (critical data, fresher)
+  });
 
-  useEffect(() => {
-    if (!id) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchUser = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/users/${id}`, {
-          headers: getAuthHeaders(),
-        });
-        const result: ApiResponse<UserWithCount> = await response.json();
-
-        if (result.success && result.data) {
-          setUser(result.data);
-        } else {
-          setError(result.error || "Usuario no encontrado");
-        }
-      } catch {
-        setError("Error de conexión");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [id]);
-
-  return { user, isLoading, error };
+  return {
+    user: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error ? (query.error as Error).message : null,
+  };
 }
