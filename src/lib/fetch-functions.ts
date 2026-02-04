@@ -7,6 +7,9 @@ import type { Addition, Product, Category, Order, User, ApiResponse } from "@/ty
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+// Cache duration for public data (in seconds)
+const PUBLIC_DATA_REVALIDATE = 60; // 1 minute
+
 // ============================================================================
 // ADDITIONS
 // ============================================================================
@@ -18,7 +21,7 @@ export async function fetchAdditions(
   if (showAll) params.set("all", "true");
 
   const response = await fetch(`${API_URL}/api/additions?${params.toString()}`, {
-    cache: "no-store",
+    next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Addition[]> = await response.json();
 
@@ -31,7 +34,7 @@ export async function fetchAdditions(
 
 export async function fetchAddition(id: string): Promise<Addition> {
   const response = await fetch(`${API_URL}/api/additions/${id}`, {
-    cache: "no-store",
+    next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Addition> = await response.json();
 
@@ -63,7 +66,7 @@ export async function fetchProducts(
     params.set("isAvailable", String(options.isAvailable));
 
   const response = await fetch(`${API_URL}/api/products?${params.toString()}`, {
-    cache: "no-store",
+    next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Product[]> = await response.json();
 
@@ -76,7 +79,7 @@ export async function fetchProducts(
 
 export async function fetchProduct(id: string): Promise<Product> {
   const response = await fetch(`${API_URL}/api/products/${id}`, {
-    cache: "no-store",
+    next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Product> = await response.json();
 
@@ -93,7 +96,7 @@ export async function fetchProduct(id: string): Promise<Product> {
 
 export async function fetchCategories(): Promise<Category[]> {
   const response = await fetch(`${API_URL}/api/categories`, {
-    cache: "no-store",
+    next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Category[]> = await response.json();
 
@@ -106,7 +109,7 @@ export async function fetchCategories(): Promise<Category[]> {
 
 export async function fetchCategory(id: string): Promise<Category> {
   const response = await fetch(`${API_URL}/api/categories/${id}`, {
-    cache: "no-store",
+    next: { revalidate: PUBLIC_DATA_REVALIDATE },
   });
   const result: ApiResponse<Category> = await response.json();
 
@@ -118,7 +121,7 @@ export async function fetchCategory(id: string): Promise<Category> {
 }
 
 // ============================================================================
-// ORDERS (require authentication)
+// ORDERS (require authentication - no cache)
 // ============================================================================
 
 interface FetchOrdersOptions {
@@ -140,7 +143,7 @@ export async function fetchOrders(options?: FetchOrdersOptions): Promise<Order[]
   }
 
   const response = await fetch(`${API_URL}/api/orders?${params.toString()}`, {
-    cache: "no-store",
+    cache: "no-store", // Orders are dynamic, no cache
     headers,
   });
   const result: ApiResponse<Order[]> = await response.json();
@@ -159,7 +162,7 @@ export async function fetchOrder(id: string, token?: string): Promise<Order> {
   }
 
   const response = await fetch(`${API_URL}/api/orders/${id}`, {
-    cache: "no-store",
+    cache: "no-store", // Orders are dynamic, no cache
     headers,
   });
   const result: ApiResponse<Order> = await response.json();
@@ -172,7 +175,7 @@ export async function fetchOrder(id: string, token?: string): Promise<Order> {
 }
 
 // ============================================================================
-// USERS (require authentication)
+// USERS (require authentication - no cache)
 // ============================================================================
 
 interface FetchUsersOptions {
@@ -192,7 +195,7 @@ export async function fetchUsers(options?: FetchUsersOptions): Promise<User[]> {
   }
 
   const response = await fetch(`${API_URL}/api/users?${params.toString()}`, {
-    cache: "no-store",
+    cache: "no-store", // Users are dynamic, no cache
     headers,
   });
   const result: ApiResponse<User[]> = await response.json();
@@ -211,7 +214,7 @@ export async function fetchUser(id: string, token?: string): Promise<User> {
   }
 
   const response = await fetch(`${API_URL}/api/users/${id}`, {
-    cache: "no-store",
+    cache: "no-store", // Users are dynamic, no cache
     headers,
   });
   const result: ApiResponse<User> = await response.json();
