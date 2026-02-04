@@ -1,9 +1,15 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuthHeaders } from "@/stores/use-auth-store";
 import { queryKeys } from "@/lib/query-keys";
-import type { Product, Category, ApiResponse } from "@/types/models";
+import {
+  fetchProducts,
+  fetchProduct,
+  createProduct as createProductFn,
+  updateProduct as updateProductFn,
+  deleteProduct as deleteProductFn,
+} from "@/lib/fetch-functions-products";
+import type { Product, Category } from "@/types/models";
 
 interface ProductWithCategory extends Product {
   category: Pick<Category, "id" | "name" | "slug">;
@@ -15,43 +21,10 @@ interface UseProductsOptions {
   isAvailable?: boolean;
 }
 
-// Fetch functions
-async function fetchProduct(id: string): Promise<ProductWithCategory> {
-  const response = await fetch(`/api/products/${id}`);
-  const result: ApiResponse<ProductWithCategory> = await response.json();
-
-  if (!result.success || !result.data) {
-    throw new Error(result.error || "Producto no encontrado");
-  }
-
-  return result.data;
-}
-
-async function fetchProducts(
-  options: UseProductsOptions = {}
-): Promise<ProductWithCategory[]> {
-  const params = new URLSearchParams();
-  if (options.categoryId) params.set("categoryId", options.categoryId);
-  if (options.isActive !== undefined)
-    params.set("isActive", String(options.isActive));
-  if (options.isAvailable !== undefined)
-    params.set("isAvailable", String(options.isAvailable));
-
-  const url = `/api/products${params.toString() ? `?${params}` : ""}`;
-  const response = await fetch(url);
-  const result: ApiResponse<ProductWithCategory[]> = await response.json();
-
-  if (!result.success || !result.data) {
-    throw new Error(result.error || "Error al cargar productos");
-  }
-
-  return result.data;
-}
-
 export function useProduct(id: string | null) {
   const query = useQuery({
     queryKey: queryKeys.products.detail(id!),
-    queryFn: () => fetchProduct(id!),
+    queryFn: () => fetchProduct(id!) as Promise<ProductWithCategory>,
     enabled: !!id,
   });
 
@@ -67,31 +40,13 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   const query = useQuery({
     queryKey: queryKeys.products.list(options),
-    queryFn: () => fetchProducts(options),
+    queryFn: () => fetchProducts(options) as Promise<ProductWithCategory[]>,
   });
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (
-      data: Partial<Product>
-    ): Promise<ProductWithCategory> => {
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<ProductWithCategory> = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || "Error al crear producto");
-      }
-
-      return result.data;
-    },
+    mutationFn: (data: Partial<Product>) =>
+      createProductFn(data) as Promise<ProductWithCategory>,
     onMutate: async (newProduct) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });
@@ -158,30 +113,8 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Partial<Product>;
-    }): Promise<ProductWithCategory> => {
-      const response = await fetch(`/api/products/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<ProductWithCategory> = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || "Error al actualizar producto");
-      }
-
-      return result.data;
-    },
+    mutationFn: ({ id, data }: { id: string; data: Partial<Product> }) =>
+      updateProductFn(id, data) as Promise<ProductWithCategory>,
     onMutate: async ({ id, data }) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });
@@ -250,18 +183,7 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: string): Promise<void> => {
-      const response = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-
-      const result: ApiResponse<void> = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "Error al eliminar producto");
-      }
-    },
+    mutationFn: (id: string) => deleteProductFn(id),
     onMutate: async (id) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.products.lists() });

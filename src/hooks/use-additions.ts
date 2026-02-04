@@ -1,35 +1,15 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAuthHeaders } from "@/stores/use-auth-store";
 import { queryKeys } from "@/lib/query-keys";
-import type { Addition, ApiResponse } from "@/types/models";
-
-// Fetch functions
-async function fetchAddition(id: string): Promise<Addition> {
-  const response = await fetch(`/api/additions/${id}`);
-  const result: ApiResponse<Addition> = await response.json();
-
-  if (!result.success || !result.data) {
-    throw new Error(result.error || "Adición no encontrada");
-  }
-
-  return result.data;
-}
-
-async function fetchAdditions(showAll: boolean = false): Promise<Addition[]> {
-  const params = new URLSearchParams();
-  if (showAll) params.set("all", "true");
-
-  const response = await fetch(`/api/additions?${params.toString()}`);
-  const result: ApiResponse<Addition[]> = await response.json();
-
-  if (!result.success || !result.data) {
-    throw new Error(result.error || "Error al cargar adiciones");
-  }
-
-  return result.data;
-}
+import {
+  fetchAdditions,
+  fetchAddition,
+  createAddition as createAdditionFn,
+  updateAddition as updateAdditionFn,
+  deleteAddition as deleteAdditionFn,
+} from "@/lib/fetch-functions-additions";
+import type { Addition } from "@/types/models";
 
 export function useAddition(id: string | null) {
   const query = useQuery({
@@ -60,24 +40,7 @@ export function useAdditions(options: UseAdditionsOptions = {}) {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (data: Partial<Addition>): Promise<Addition> => {
-      const response = await fetch("/api/additions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<Addition> = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || "Error al crear adición");
-      }
-
-      return result.data;
-    },
+    mutationFn: (data: Partial<Addition>) => createAdditionFn(data),
     onMutate: async (newAddition) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.additions.lists() });
@@ -140,30 +103,8 @@ export function useAdditions(options: UseAdditionsOptions = {}) {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Partial<Addition>;
-    }): Promise<Addition> => {
-      const response = await fetch(`/api/additions/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<Addition> = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.error || "Error al actualizar adición");
-      }
-
-      return result.data;
-    },
+    mutationFn: ({ id, data }: { id: string; data: Partial<Addition> }) =>
+      updateAdditionFn(id, data),
     onMutate: async ({ id, data }) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.additions.lists() });
@@ -229,18 +170,7 @@ export function useAdditions(options: UseAdditionsOptions = {}) {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: string): Promise<void> => {
-      const response = await fetch(`/api/additions/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-
-      const result: ApiResponse<void> = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "Error al eliminar adición");
-      }
-    },
+    mutationFn: (id: string) => deleteAdditionFn(id),
     onMutate: async (id) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.additions.lists() });

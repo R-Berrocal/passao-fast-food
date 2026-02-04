@@ -1,39 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { getAuthHeaders } from "@/stores/use-auth-store";
-import type { Order, OrderStatus } from "@/types/models";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import {
+  fetchOrders,
+  updateOrderStatus as updateOrderStatusFn,
+  createOrder as createOrderFn,
+} from "@/lib/fetch-functions-orders";
+import type { OrderStatus } from "@/types/models";
 import type { CreateOrderInput } from "@/lib/validations/order";
-
-interface OrderItem {
-  id: string;
-  productId: string;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  additions: {
-    id: string;
-    additionName: string;
-    price: number;
-  }[];
-}
-
-interface OrderWithItems extends Order {
-  items: OrderItem[];
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-  };
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
 
 interface UseOrdersOptions {
   status?: OrderStatus;
@@ -41,42 +16,38 @@ interface UseOrdersOptions {
   date?: string;
 }
 
+// ============================================================================
+// Main Hook
+// ============================================================================
+
 export function useOrders(options: UseOrdersOptions = {}) {
-  const [orders, setOrders] = useState<OrderWithItems[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchOrders = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Query for orders list
+  const { data: orders = [], isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.orders.list(options),
+    queryFn: () => fetchOrders(options),
+    staleTime: 5 * 60 * 1000, // 5 minutes (fresher data for orders)
+  });
 
-    try {
-      const params = new URLSearchParams();
-      if (options.status) params.set("status", options.status);
-      if (options.type) params.set("type", options.type);
-      if (options.date) params.set("date", options.date);
-
-      const url = `/api/orders${params.toString() ? `?${params}` : ""}`;
-      const response = await fetch(url, {
-        headers: getAuthHeaders(),
-      });
-      const result: ApiResponse<OrderWithItems[]> = await response.json();
-
-      if (result.success && result.data) {
-        setOrders(result.data);
-      } else {
-        setError(result.error || "Error al cargar órdenes");
-      }
-    } catch {
-      setError("Error de conexión");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [options.status, options.type, options.date]);
-
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  // Mutation for updating order status
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: async ({
+      id,
+      status,
+      adminNotes,
+    }: {
+      id: string;
+      status: OrderStatus;
+      adminNotes?: string;
+    }) => {
+      return updateOrderStatusFn(id, status, adminNotes);
+    },
+    onSuccess: () => {
+      // Invalidate all orders queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+    },
+  });
 
   const updateOrderStatus = async (
     id: string,
@@ -84,28 +55,9 @@ export function useOrders(options: UseOrdersOptions = {}) {
     adminNotes?: string
   ): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/orders/${id}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify({ status, adminNotes }),
-      });
-
-      const result: ApiResponse<OrderWithItems> = await response.json();
-
-      if (result.success && result.data) {
-        setOrders((prev) =>
-          prev.map((o) => (o.id === id ? result.data! : o))
-        );
-        return true;
-      }
-
-      setError(result.error || "Error al actualizar estado");
-      return false;
+      await updateOrderStatusMutation.mutateAsync({ id, status, adminNotes });
+      return true;
     } catch {
-      setError("Error de conexión");
       return false;
     }
   };
@@ -113,52 +65,42 @@ export function useOrders(options: UseOrdersOptions = {}) {
   return {
     orders,
     isLoading,
-    error,
-    refetch: fetchOrders,
+    error: error ? (error as Error).message : null,
+    refetch,
     updateOrderStatus,
-    clearError: () => setError(null),
+    clearError: () => {}, // No-op for API consistency
   };
 }
 
+// ============================================================================
+// Create Order Hook
+// ============================================================================
+
 export function useCreateOrder() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const createOrder = async (
-    data: CreateOrderInput
-  ): Promise<OrderWithItems | null> => {
-    setIsLoading(true);
-    setError(null);
+  const mutation = useMutation({
+    mutationFn: async (data: CreateOrderInput) => {
+      return createOrderFn(data);
+    },
+    onSuccess: () => {
+      // Invalidate all orders queries to include the new order
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+    },
+  });
 
+  const createOrder = async (data: CreateOrderInput) => {
     try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<OrderWithItems> = await response.json();
-
-      if (result.success && result.data) {
-        return result.data;
-      }
-
-      setError(result.error || "Error al crear orden");
-      return null;
+      return await mutation.mutateAsync(data);
     } catch {
-      setError("Error de conexión");
       return null;
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return {
     createOrder,
-    isLoading,
-    error,
-    clearError: () => setError(null),
+    isLoading: mutation.isPending,
+    error: mutation.error ? (mutation.error as Error).message : null,
+    clearError: mutation.reset,
   };
 }
