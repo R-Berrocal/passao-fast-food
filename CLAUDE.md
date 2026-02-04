@@ -107,9 +107,9 @@ const createMutation = useMutation({
 });
 ```
 
-**SSR Prefetching Pattern** (`page.tsx` + `*-page-content.tsx`):
+**SSR Prefetching Pattern** (solo para páginas públicas donde importa SEO):
 ```typescript
-// Server Component (page.tsx)
+// Server Component (page.tsx) - SOLO para páginas públicas como landing/menu
 export default async function Page() {
   const queryClient = getQueryClient();
   await queryClient.prefetchQuery({
@@ -122,13 +122,27 @@ export default async function Page() {
     </HydrationBoundary>
   );
 }
+```
 
-// Client Component (*-page-content.tsx)
+**Client-Only Pattern** (para admin dashboards - mejor caching):
+```typescript
+// page.tsx - Simple, sin SSR prefetch
+import { PageContent } from "./page-content";
+export default function Page() {
+  return <PageContent />;
+}
+
+// page-content.tsx - Client component con useQuery
+"use client";
 export function PageContent() {
-  const { products } = useProducts(); // Data already hydrated from server
+  const { products } = useProducts(); // TanStack Query maneja caching
   ...
 }
 ```
+
+**Cuándo usar cada patrón:**
+- **SSR Prefetch**: Páginas públicas (landing, menú) donde SEO importa
+- **Client-Only**: Admin dashboards donde el caching entre navegaciones es más importante
 
 **Query Keys Factory** (`src/lib/query-keys.ts`):
 - Centralized query keys for type safety and cache management
@@ -169,4 +183,5 @@ Use `@/*` to import from `src/*` (configured in tsconfig.json).
 - para las migraciones con prisma debes cambiar la variable de entorno por DIRECT_URL
 - usar el tipo `ApiResponse<T>` de `@/types/models` para todas las respuestas de API
 - para crear hooks de datos, seguir el patrón de TanStack Query con optimistic updates
-- para páginas admin, usar el patrón de SSR prefetch con `HydrationBoundary`
+- para páginas admin, usar el patrón client-only (sin SSR prefetch) para mejor caching
+- para páginas públicas (landing, menú), usar SSR prefetch con `HydrationBoundary`
