@@ -8,6 +8,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { fetchAdditions } from "@/lib/fetch-functions-additions";
 import { fetchProducts } from "@/lib/fetch-functions-products";
 import { fetchCategories } from "@/lib/fetch-functions-categories";
+import { fetchBusinessConfig, fetchBusinessHours } from "@/lib/fetch-functions-business";
 
 export default async function Home() {
   const queryClient = getQueryClient();
@@ -25,6 +26,14 @@ export default async function Home() {
     queryClient.prefetchQuery({
       queryKey: queryKeys.categories.list(),
       queryFn: () => fetchCategories(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.business.config(),
+      queryFn: () => fetchBusinessConfig(),
+    }),
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.business.hours(),
+      queryFn: () => fetchBusinessHours(),
     }),
   ]);
 

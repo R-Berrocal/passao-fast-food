@@ -1,68 +1,44 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { getAuthHeaders } from "@/stores/use-auth-store";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
+import {
+  fetchBusinessConfig,
+  fetchBusinessHours,
+  updateBusinessConfig as updateBusinessConfigFn,
+  updateBusinessHours as updateBusinessHoursFn,
+} from "@/lib/fetch-functions-business";
 import type { BusinessConfig, BusinessHours } from "@/types/models";
 
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+// ============================================================================
+// Business Config Hook
+// ============================================================================
 
 export function useBusinessConfig() {
-  const [config, setConfig] = useState<BusinessConfig | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchConfig = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Query for business config
+  const { data: config = null, isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.business.config(),
+    queryFn: fetchBusinessConfig,
+    staleTime: 5 * 60 * 1000, // 5 minutes (critical data, fresher)
+  });
 
-    try {
-      const response = await fetch("/api/business/config");
-      const result: ApiResponse<BusinessConfig> = await response.json();
-
-      if (result.success && result.data) {
-        setConfig(result.data);
-      } else {
-        setError(result.error || "Error al cargar configuración");
-      }
-    } catch {
-      setError("Error de conexión");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+  // Mutation for updating business config
+  const updateConfigMutation = useMutation({
+    mutationFn: (data: Partial<BusinessConfig>) => updateBusinessConfigFn(data),
+    onSuccess: () => {
+      // Invalidate to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.business.config() });
+    },
+  });
 
   const updateConfig = async (
     data: Partial<BusinessConfig>
   ): Promise<BusinessConfig | null> => {
     try {
-      const response = await fetch("/api/business/config", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<BusinessConfig> = await response.json();
-
-      if (result.success && result.data) {
-        setConfig(result.data);
-        return result.data;
-      }
-
-      setError(result.error || "Error al actualizar configuración");
-      return null;
+      return await updateConfigMutation.mutateAsync(data);
     } catch {
-      setError("Error de conexión");
       return null;
     }
   };
@@ -70,66 +46,42 @@ export function useBusinessConfig() {
   return {
     config,
     isLoading,
-    error,
-    refetch: fetchConfig,
+    error: error ? (error as Error).message : null,
+    refetch,
     updateConfig,
-    clearError: () => setError(null),
+    clearError: updateConfigMutation.reset,
   };
 }
 
+// ============================================================================
+// Business Hours Hook
+// ============================================================================
+
 export function useBusinessHours() {
-  const [hours, setHours] = useState<BusinessHours[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchHours = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+  // Query for business hours
+  const { data: hours = [], isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.business.hours(),
+    queryFn: fetchBusinessHours,
+    staleTime: 5 * 60 * 1000, // 5 minutes (critical data, fresher)
+  });
 
-    try {
-      const response = await fetch("/api/business/hours");
-      const result: ApiResponse<BusinessHours[]> = await response.json();
-
-      if (result.success && result.data) {
-        setHours(result.data);
-      } else {
-        setError(result.error || "Error al cargar horarios");
-      }
-    } catch {
-      setError("Error de conexión");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchHours();
-  }, [fetchHours]);
+  // Mutation for updating business hours
+  const updateHoursMutation = useMutation({
+    mutationFn: (data: BusinessHours[]) => updateBusinessHoursFn(data),
+    onSuccess: () => {
+      // Invalidate to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.business.hours() });
+    },
+  });
 
   const updateHours = async (
     data: BusinessHours[]
   ): Promise<BusinessHours[] | null> => {
     try {
-      const response = await fetch("/api/business/hours", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result: ApiResponse<BusinessHours[]> = await response.json();
-
-      if (result.success && result.data) {
-        setHours(result.data);
-        return result.data;
-      }
-
-      setError(result.error || "Error al actualizar horarios");
-      return null;
+      return await updateHoursMutation.mutateAsync(data);
     } catch {
-      setError("Error de conexión");
       return null;
     }
   };
@@ -137,9 +89,9 @@ export function useBusinessHours() {
   return {
     hours,
     isLoading,
-    error,
-    refetch: fetchHours,
+    error: error ? (error as Error).message : null,
+    refetch,
     updateHours,
-    clearError: () => setError(null),
+    clearError: updateHoursMutation.reset,
   };
 }
