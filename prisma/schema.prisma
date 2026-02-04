@@ -70,9 +70,9 @@ enum DayOfWeek {
 model User {
   id        String     @id @default(cuid())
   name      String
-  email     String     @unique
-  phone     String
-  password  String?    // Hashed, null para usuarios creados por admin
+  email     String?    // Opcional para clientes, requerido para admin/staff
+  phone     String     @unique // Identificador principal para clientes
+  password  String?    // Solo para admin/staff
   role      UserRole   @default(customer)
   status    UserStatus @default(active)
   createdAt DateTime   @default(now())
@@ -85,15 +85,11 @@ model User {
 }
 
 model Address {
-  id           String   @id @default(cuid())
-  userId       String
-  label        String   // "Casa", "Trabajo", etc.
-  street       String   // "Calle 45 #23-12"
-  neighborhood String   // "El Prado"
-  city         String   @default("Barranquilla")
-  details      String?  // "Apto 301, edificio azul"
-  isDefault    Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  address   String   // Dirección completa: "Calle 45 #23-12, Barrio El Prado"
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders Order[]

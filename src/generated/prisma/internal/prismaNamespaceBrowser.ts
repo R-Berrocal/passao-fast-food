@@ -99,11 +99,7 @@ export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof User
 export const AddressScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  label: 'label',
-  street: 'street',
-  neighborhood: 'neighborhood',
-  city: 'city',
-  details: 'details',
+  address: 'address',
   isDefault: 'isDefault',
   createdAt: 'createdAt'
 } as const

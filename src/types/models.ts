@@ -17,7 +17,7 @@ export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "frida
 export interface User {
   id: string;
   name: string;
-  email: string;
+  email?: string; // Opcional para clientes, requerido para admin/staff
   phone: string;
   password?: string; // Hashed, never sent to client
   role: UserRole;
@@ -26,14 +26,17 @@ export interface User {
   updatedAt: Date;
 }
 
+export interface CheckoutCustomer {
+  id: string;
+  name: string;
+  phone: string;
+  isNew: boolean;
+}
+
 export interface Address {
   id: string;
   userId: string;
-  label: string; // "Casa", "Trabajo", etc.
-  street: string; // "Calle 45 #23-12"
-  neighborhood: string; // "El Prado"
-  city: string; // "Barranquilla"
-  details?: string; // "Apto 301, edificio azul"
+  address: string; // Dirección completa
   isDefault: boolean;
   createdAt: Date;
 }

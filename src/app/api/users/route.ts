@@ -67,12 +67,27 @@ export async function POST(request: NextRequest) {
 
     const { name, email, phone, password, role, status } = result.data;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    // Check for duplicate phone
+    const existingPhone = await prisma.user.findUnique({
+      where: { phone },
     });
 
-    if (existingUser) {
-      return errorResponse("Este email ya está registrado", 409);
+    if (existingPhone) {
+      return errorResponse("Este teléfono ya está registrado", 409);
+    }
+
+    // Check for duplicate email among admin/staff
+    if (email) {
+      const existingEmail = await prisma.user.findFirst({
+        where: {
+          email,
+          role: { in: ["admin", "staff"] },
+        },
+      });
+
+      if (existingEmail) {
+        return errorResponse("Este email ya está registrado", 409);
+      }
     }
 
     const hashedPassword = password ? await hashPassword(password) : null;

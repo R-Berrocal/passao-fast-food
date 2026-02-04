@@ -16,6 +16,7 @@ export const createOrderSchema = z.object({
   customerEmail: z.string().email().optional().or(z.literal("")),
   type: z.enum(["delivery", "pickup"]),
   deliveryAddress: z.string().optional(),
+  addressId: z.string().optional(), // ID de dirección guardada
   notes: z.string().optional(),
   paymentMethod: z.enum(["cash", "nequi", "daviplata", "transfer"]),
   paymentReference: z.string().optional(),

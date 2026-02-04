@@ -93,12 +93,27 @@ export async function PUT(request: NextRequest, { params }: Params) {
       return unauthorizedResponse("Solo administradores pueden cambiar rol o estado");
     }
 
+    // Check for duplicate email among admin/staff
     if (result.data.email && result.data.email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email: result.data.email },
+      const emailExists = await prisma.user.findFirst({
+        where: {
+          email: result.data.email,
+          role: { in: ["admin", "staff"] },
+          id: { not: id },
+        },
       });
       if (emailExists) {
         return errorResponse("Este email ya está registrado", 409);
+      }
+    }
+
+    // Check for duplicate phone
+    if (result.data.phone && result.data.phone !== existingUser.phone) {
+      const phoneExists = await prisma.user.findUnique({
+        where: { phone: result.data.phone },
+      });
+      if (phoneExists) {
+        return errorResponse("Este teléfono ya está registrado", 409);
       }
     }
 

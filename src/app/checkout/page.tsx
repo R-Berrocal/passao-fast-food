@@ -1,11 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, MapPin, Store, Loader2, CheckCircle, Clock, AlertCircle, User, LogIn } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Store,
+  Loader2,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Plus,
+  Trash2,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,57 +25,65 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useCartStore, useCartTotal, formatPrice } from "@/stores/use-cart-store";
-import { useAuthStore } from "@/stores/use-auth-store";
+import { useCustomerStore, useSelectedAddress } from "@/stores/use-customer-store";
 import { useBusinessConfig, useBusinessHours } from "@/hooks/use-business";
 import { useCreateOrder } from "@/hooks/use-orders";
-import { useUserAddresses } from "@/hooks/use-user-addresses";
+import { useCustomerLookup } from "@/hooks/use-customer-lookup";
 import { type DayOfWeek } from "@/types/models";
 
-const emailValidation = z
-  .string()
-  .refine(
-    (val) => val === "" || z.string().email().safeParse(val).success,
-    { message: "Correo electrónico inválido" }
-  );
-
-const deliverySchema = z.object({
-  customerName: z.string().min(2, "El nombre es requerido"),
-  customerPhone: z.string().min(10, "Número de teléfono inválido"),
-  customerEmail: emailValidation,
-  street: z.string().min(5, "La dirección es requerida"),
-  neighborhood: z.string().min(2, "El barrio es requerido"),
-  addressDetails: z.string().optional(),
-  notes: z.string().optional(),
+const customerSchema = z.object({
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
+  phone: z
+    .string()
+    .min(10, "Número de teléfono inválido")
+    .regex(/^[0-9+\s-]+$/, "Formato inválido"),
 });
 
-const pickupSchema = z.object({
-  customerName: z.string().min(2, "El nombre es requerido"),
-  customerPhone: z.string().min(10, "Número de teléfono inválido"),
-  customerEmail: emailValidation,
-  notes: z.string().optional(),
+const newAddressSchema = z.object({
+  address: z.string().min(5, "La dirección es requerida"),
 });
 
-type DeliveryFormData = z.infer<typeof deliverySchema>;
-type PickupFormData = z.infer<typeof pickupSchema>;
+type CustomerFormData = z.infer<typeof customerSchema>;
+type NewAddressData = z.infer<typeof newAddressSchema>;
 
 export default function CheckoutPage() {
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
   const total = useCartTotal();
+
+  const { customer, addresses, selectedAddressId, selectAddress } = useCustomerStore();
+  const selectedAddress = useSelectedAddress();
+
   const [orderType, setOrderType] = useState<"delivery" | "pickup">("delivery");
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "nequi" | "daviplata" | "transfer">("cash");
   const [orderSuccess, setOrderSuccess] = useState<{ orderNumber: string } | null>(null);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
 
   const { config, isLoading: configLoading } = useBusinessConfig();
   const { hours } = useBusinessHours();
   const { createOrder, isLoading: orderLoading, error: orderError } = useCreateOrder();
-  const { user, isAuthenticated } = useAuthStore();
-  const { addresses, isLoading: addressesLoading, createAddress, getDefaultAddress } = useUserAddresses();
+  const { isLooking, lookupOrCreate, createAddress, deleteAddress, clearCustomer } = useCustomerLookup();
 
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [saveAddress, setSaveAddress] = useState(false);
+  const customerForm = useForm<CustomerFormData>({
+    resolver: zodResolver(customerSchema),
+    defaultValues: { name: "", phone: "" },
+  });
+
+  const addressForm = useForm<NewAddressData>({
+    resolver: zodResolver(newAddressSchema),
+    defaultValues: { address: "" },
+  });
+
+  // Restore customer data from store on mount
+  useEffect(() => {
+    if (customer) {
+      customerForm.setValue("name", customer.name);
+      customerForm.setValue("phone", customer.phone);
+    }
+  }, []);
 
   const formatTime = (time: string) => {
     const [hour, minute] = time.split(":");
@@ -87,17 +106,12 @@ export default function CheckoutPage() {
 
   const isBusinessOpen = () => {
     const todayHours = getTodayHours();
-
-    if (!todayHours || !todayHours.isOpen) {
-      return false;
-    }
+    if (!todayHours || !todayHours.isOpen) return false;
 
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-
     const [openHour, openMinute] = (todayHours.openTime || "10:00").split(":").map(Number);
     const [closeHour, closeMinute] = (todayHours.closeTime || "22:00").split(":").map(Number);
-
     const openTime = openHour * 60 + openMinute;
     const closeTime = closeHour * 60 + closeMinute;
 
@@ -106,25 +120,18 @@ export default function CheckoutPage() {
 
   const getBusinessHoursText = () => {
     const todayHours = getTodayHours();
-
-    if (!todayHours || !todayHours.isOpen) {
-      return "Cerrado hoy";
-    }
-
+    if (!todayHours || !todayHours.isOpen) return "Cerrado hoy";
     return `${formatTime(todayHours.openTime || "10:00")} - ${formatTime(todayHours.closeTime || "22:00")}`;
   };
 
   const getBusinessStatusMessage = () => {
     const todayHours = getTodayHours();
-
     if (!todayHours || !todayHours.isOpen) {
       return "El negocio está cerrado hoy. Por favor, vuelve otro día.";
     }
-
     if (!isBusinessOpen()) {
       const openTime = formatTime(todayHours.openTime || "10:00");
       const closeTime = formatTime(todayHours.closeTime || "22:00");
-
       const now = new Date();
       const currentHour = now.getHours();
       const [openHour] = (todayHours.openTime || "10:00").split(":").map(Number);
@@ -135,125 +142,73 @@ export default function CheckoutPage() {
         return `Ya cerramos por hoy. Horario: ${openTime} - ${closeTime}`;
       }
     }
-
     return null;
   };
 
   const businessOpen = isBusinessOpen();
   const businessStatusMessage = getBusinessStatusMessage();
-
-  const deliveryForm = useForm<DeliveryFormData>({
-    resolver: zodResolver(deliverySchema),
-    defaultValues: {
-      customerName: "",
-      customerPhone: "",
-      customerEmail: "",
-      street: "",
-      neighborhood: "",
-      addressDetails: "",
-      notes: "",
-    },
-  });
-
-  const pickupForm = useForm<PickupFormData>({
-    resolver: zodResolver(pickupSchema),
-    defaultValues: {
-      customerName: "",
-      customerPhone: "",
-      customerEmail: "",
-      notes: "",
-    },
-  });
-
-  const deliveryCost = orderType === "delivery" ? (config?.deliveryFee || 5000) : 0;
+  const deliveryCost = orderType === "delivery" ? (config?.deliveryFee || 0) : 0;
   const finalTotal = total + deliveryCost;
 
-  // Track if we've already initialized forms
-  const hasInitializedForms = useRef(false);
+  // Handle customer form submission
+  const handleCustomerSubmit = useCallback(
+    async (data: CustomerFormData) => {
+      const normalizedPhone = data.phone.replace(/[\s-]/g, "");
+      await lookupOrCreate(normalizedPhone, data.name);
+    },
+    [lookupOrCreate]
+  );
 
-  // Load user data and saved addresses - only once when data is ready
-  useEffect(() => {
-    if (hasInitializedForms.current || addressesLoading) return;
+  // Handle new address submission
+  const handleAddressSubmit = useCallback(
+    async (data: NewAddressData) => {
+      if (!customer) return;
 
-    if (isAuthenticated && user) {
-      hasInitializedForms.current = true;
-      const defaultAddress = getDefaultAddress();
+      const newAddress = await createAddress(customer.phone, {
+        address: data.address,
+        isDefault: addresses.length === 0,
+      });
 
-      const deliveryData = {
-        customerName: user.name,
-        customerPhone: user.phone,
-        customerEmail: user.email,
-        street: defaultAddress?.street || "",
-        neighborhood: defaultAddress?.neighborhood || "",
-        addressDetails: defaultAddress?.details || "",
-        notes: "",
-      };
-      const pickupData = {
-        customerName: user.name,
-        customerPhone: user.phone,
-        customerEmail: user.email,
-        notes: "",
-      };
-      deliveryForm.reset(deliveryData);
-      pickupForm.reset(pickupData);
-
-      // Initialize saveAddress checkbox if user has saved addresses
-      if (addresses.length > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial sync from database
-        setSaveAddress(true);
+      if (newAddress) {
+        setShowNewAddressForm(false);
+        addressForm.reset();
       }
-    }
-  }, [isAuthenticated, user, addresses, addressesLoading, deliveryForm, pickupForm, getDefaultAddress]);
+    },
+    [createAddress, customer, addresses.length, addressForm]
+  );
 
-  const handleSaveAddressChange = (checked: boolean) => {
-    if (checked && !isAuthenticated) {
-      setShowLoginPrompt(true);
-    } else {
-      setSaveAddress(checked);
-    }
-  };
+  // Handle address deletion
+  const handleDeleteAddress = useCallback(
+    async (addressId: string) => {
+      if (!customer) return;
 
-  const saveUserAddress = async (formData: DeliveryFormData) => {
-    if (!saveAddress || !isAuthenticated || !user) return;
+      setDeletingAddressId(addressId);
+      await deleteAddress(customer.phone, addressId);
+      setDeletingAddressId(null);
+    },
+    [deleteAddress, customer]
+  );
 
-    // Check if address already exists (by street and neighborhood)
-    const addressExists = addresses.some(
-      (addr) =>
-        addr.street.toLowerCase() === formData.street.toLowerCase() &&
-        addr.neighborhood.toLowerCase() === formData.neighborhood.toLowerCase()
-    );
+  // Change customer (clear and reset)
+  const handleChangeCustomer = useCallback(() => {
+    clearCustomer();
+    customerForm.reset();
+    setShowNewAddressForm(false);
+  }, [clearCustomer, customerForm]);
 
-    if (addressExists) return;
-
-    await createAddress({
-      label: addresses.length === 0 ? "Casa" : "Dirección " + (addresses.length + 1),
-      street: formData.street,
-      neighborhood: formData.neighborhood,
-      city: config?.city || "Barranquilla",
-      details: formData.addressDetails || undefined,
-      isDefault: addresses.length === 0,
-    });
-  };
-
-  const buildWhatsAppMessage = (orderNumber: string, formData: DeliveryFormData | PickupFormData) => {
+  const buildWhatsAppMessage = (orderNumber: string) => {
     const lines: string[] = [
       `*NUEVO PEDIDO - ${orderNumber}*`,
       "",
-      `*Cliente:* ${formData.customerName}`,
-      `*Teléfono:* ${formData.customerPhone}`,
+      `*Cliente:* ${customer?.name}`,
+      `*Teléfono:* ${customer?.phone}`,
     ];
-
-    if (formData.customerEmail) {
-      lines.push(`*Email:* ${formData.customerEmail}`);
-    }
 
     lines.push("");
     lines.push(`*Tipo:* ${orderType === "delivery" ? "Domicilio" : "Recoger en local"}`);
 
-    if (orderType === "delivery" && "street" in formData) {
-      const addressParts = [formData.street, formData.neighborhood];
-      if (formData.addressDetails) addressParts.push(formData.addressDetails);
-      lines.push(`*Dirección:* ${addressParts.join(", ")}`);
+    if (orderType === "delivery" && selectedAddress) {
+      lines.push(`*Dirección:* ${selectedAddress.address}`);
     }
 
     lines.push("");
@@ -285,9 +240,9 @@ export default function CheckoutPage() {
     };
     lines.push(`*Método de pago:* ${paymentLabels[paymentMethod]}`);
 
-    if (formData.notes) {
+    if (notes) {
       lines.push("");
-      lines.push(`📝 *Notas:* ${formData.notes}`);
+      lines.push(`*Notas:* ${notes}`);
     }
 
     lines.push("");
@@ -304,15 +259,7 @@ export default function CheckoutPage() {
   };
 
   const handleSubmit = async () => {
-    const formData = orderType === "delivery"
-      ? deliveryForm.getValues()
-      : pickupForm.getValues();
-
-    const isValid = orderType === "delivery"
-      ? await deliveryForm.trigger()
-      : await pickupForm.trigger();
-
-    if (!isValid) return;
+    if (!customer) return;
 
     const orderItems = items.map((item) => ({
       productId: item.id,
@@ -320,37 +267,32 @@ export default function CheckoutPage() {
       additions: item.additions.map((a) => ({ additionId: a.id })),
     }));
 
-    // Build delivery address from parts
-    let deliveryAddress: string | undefined;
-    if (orderType === "delivery") {
-      const df = formData as DeliveryFormData;
-      const addressParts = [df.street, df.neighborhood];
-      if (df.addressDetails) addressParts.push(df.addressDetails);
-      deliveryAddress = addressParts.join(", ");
-    }
-
     const order = await createOrder({
-      customerName: formData.customerName,
-      customerPhone: formData.customerPhone,
-      customerEmail: formData.customerEmail || undefined,
+      customerName: customer.name,
+      customerPhone: customer.phone,
       type: orderType,
-      deliveryAddress,
-      notes: formData.notes,
+      deliveryAddress: orderType === "delivery" ? selectedAddress?.address : undefined,
+      addressId: orderType === "delivery" ? selectedAddressId || undefined : undefined,
+      notes: notes || undefined,
       paymentMethod,
       items: orderItems,
     });
 
     if (order) {
-      // Save address if checkbox is checked and it's a delivery order
-      if (orderType === "delivery") {
-        await saveUserAddress(formData as DeliveryFormData);
-      }
-
-      const whatsappMessage = buildWhatsAppMessage(order.orderNumber, formData);
+      const whatsappMessage = buildWhatsAppMessage(order.orderNumber);
       openWhatsApp(whatsappMessage);
       setOrderSuccess({ orderNumber: order.orderNumber });
       clearCart();
+      clearCustomer();
     }
+  };
+
+  // Check if can submit order
+  const canSubmitOrder = () => {
+    if (!customer) return false;
+    if (orderType === "delivery" && !selectedAddressId) return false;
+    if (showNewAddressForm) return false;
+    return true;
   };
 
   if (orderSuccess) {
@@ -367,9 +309,7 @@ export default function CheckoutPage() {
             <CardContent className="pt-6">
               <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
               <h2 className="mt-4 text-2xl font-bold">Pedido Realizado</h2>
-              <p className="mt-2 text-muted-foreground">
-                Tu pedido ha sido recibido exitosamente
-              </p>
+              <p className="mt-2 text-muted-foreground">Tu pedido ha sido recibido exitosamente</p>
               <div className="mt-4 rounded-lg bg-muted p-4">
                 <p className="text-sm text-muted-foreground">Número de orden</p>
                 <p className="text-2xl font-bold text-primary">{orderSuccess.orderNumber}</p>
@@ -410,12 +350,8 @@ export default function CheckoutPage() {
                 <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p className="font-medium text-amber-600 dark:text-amber-400">
-                  Estamos cerrados
-                </p>
-                <p className="text-sm text-amber-600/80 dark:text-amber-400/80">
-                  {businessStatusMessage}
-                </p>
+                <p className="font-medium text-amber-600 dark:text-amber-400">Estamos cerrados</p>
+                <p className="text-sm text-amber-600/80 dark:text-amber-400/80">{businessStatusMessage}</p>
               </div>
             </div>
           </div>
@@ -425,327 +361,286 @@ export default function CheckoutPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-6">
+            {/* Customer Info */}
             <Card>
               <CardHeader>
-                <CardTitle>Tipo de Entrega</CardTitle>
+                <CardTitle>Tus Datos</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs
-                  value={orderType}
-                  onValueChange={(v) => setOrderType(v as "delivery" | "pickup")}
-                >
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="delivery" className="gap-2 cursor-pointer">
-                      <MapPin className="h-4 w-4" />
-                      Domicilio
-                    </TabsTrigger>
-                    <TabsTrigger value="pickup" className="gap-2 cursor-pointer">
-                      <Store className="h-4 w-4" />
-                      Recoger
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="delivery" className="mt-6 space-y-4">
+                {!customer ? (
+                  <form onSubmit={customerForm.handleSubmit(handleCustomerSubmit)} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Nombre completo</Label>
+                        <Label htmlFor="name">Nombre completo *</Label>
                         <Input
                           id="name"
                           placeholder="Tu nombre"
-                          {...deliveryForm.register("customerName")}
+                          {...customerForm.register("name")}
                         />
-                        {deliveryForm.formState.errors.customerName && (
+                        {customerForm.formState.errors.name && (
                           <p className="text-sm text-destructive">
-                            {deliveryForm.formState.errors.customerName.message}
+                            {customerForm.formState.errors.name.message}
                           </p>
                         )}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Teléfono</Label>
+                        <Label htmlFor="phone">Teléfono *</Label>
                         <Input
                           id="phone"
                           placeholder="3001234567"
-                          {...deliveryForm.register("customerPhone")}
+                          {...customerForm.register("phone")}
                         />
-                        {deliveryForm.formState.errors.customerPhone && (
+                        {customerForm.formState.errors.phone && (
                           <p className="text-sm text-destructive">
-                            {deliveryForm.formState.errors.customerPhone.message}
+                            {customerForm.formState.errors.phone.message}
                           </p>
                         )}
                       </div>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Correo electrónico (opcional)</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="tu@email.com"
-                        {...deliveryForm.register("customerEmail")}
-                      />
-                      {deliveryForm.formState.errors.customerEmail && (
-                        <p className="text-sm text-destructive">
-                          {deliveryForm.formState.errors.customerEmail.message}
-                        </p>
+                    <Button type="submit" className="w-full cursor-pointer" disabled={isLooking}>
+                      {isLooking ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verificando...
+                        </>
+                      ) : (
+                        "Continuar"
                       )}
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{customer.name}</p>
+                      <p className="text-sm text-muted-foreground">{customer.phone}</p>
                     </div>
+                    <Button variant="ghost" size="sm" onClick={handleChangeCustomer} className="cursor-pointer">
+                      Cambiar
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="street">Dirección *</Label>
-                        <Input
-                          id="street"
-                          placeholder="Calle 50 #30-20"
-                          {...deliveryForm.register("street")}
-                        />
-                        {deliveryForm.formState.errors.street && (
-                          <p className="text-sm text-destructive">
-                            {deliveryForm.formState.errors.street.message}
+            {/* Delivery Type & Address */}
+            {customer && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tipo de Entrega</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Tabs
+                    value={orderType}
+                    onValueChange={(v) => {
+                      setOrderType(v as "delivery" | "pickup");
+                      if (v === "pickup") {
+                        setShowNewAddressForm(false);
+                      }
+                    }}
+                  >
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="delivery" className="gap-2 cursor-pointer">
+                        <MapPin className="h-4 w-4" />
+                        Domicilio
+                      </TabsTrigger>
+                      <TabsTrigger value="pickup" className="gap-2 cursor-pointer">
+                        <Store className="h-4 w-4" />
+                        Recoger
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="delivery" className="mt-6 space-y-4">
+                      {/* Address Selection */}
+                      {addresses.length > 0 && !showNewAddressForm && (
+                        <div className="space-y-3">
+                          <Label>Selecciona una dirección</Label>
+                          <RadioGroup value={selectedAddressId || ""} onValueChange={selectAddress}>
+                            {addresses.map((addr) => (
+                              <div
+                                key={addr.id}
+                                className={`flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-colors ${
+                                  selectedAddressId === addr.id
+                                    ? "border-primary bg-primary/5"
+                                    : "hover:bg-muted/50"
+                                }`}
+                                onClick={() => selectAddress(addr.id)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <RadioGroupItem value={addr.id} id={addr.id} />
+                                  <div>
+                                    <p className="font-medium">{addr.address}</p>
+                                    {addr.isDefault && (
+                                      <span className="text-xs text-muted-foreground">Principal</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {selectedAddressId === addr.id && (
+                                    <Check className="h-5 w-5 text-primary" />
+                                  )}
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-destructive cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteAddress(addr.id);
+                                    }}
+                                    disabled={deletingAddressId === addr.id}
+                                  >
+                                    {deletingAddressId === addr.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </RadioGroup>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full cursor-pointer"
+                            onClick={() => setShowNewAddressForm(true)}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Agregar nueva dirección
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* New Address Form */}
+                      {(addresses.length === 0 || showNewAddressForm) && (
+                        <form onSubmit={addressForm.handleSubmit(handleAddressSubmit)} className="space-y-4">
+                          {addresses.length > 0 && (
+                            <div className="flex items-center justify-between">
+                              <Label className="text-base font-medium">Nueva dirección</Label>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowNewAddressForm(false)}
+                                className="cursor-pointer"
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          )}
+
+                          <div className="space-y-2">
+                            <Label htmlFor="address">Dirección completa *</Label>
+                            <Input
+                              id="address"
+                              placeholder="Calle 50 #30-20, Barrio El Prado"
+                              {...addressForm.register("address")}
+                            />
+                            {addressForm.formState.errors.address && (
+                              <p className="text-sm text-destructive">
+                                {addressForm.formState.errors.address.message}
+                              </p>
+                            )}
+                          </div>
+
+                          <Button type="submit" className="w-full cursor-pointer" disabled={isLooking}>
+                            {isLooking ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Guardando...
+                              </>
+                            ) : (
+                              "Guardar dirección"
+                            )}
+                          </Button>
+                        </form>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="pickup" className="mt-6">
+                      <Card className="bg-muted">
+                        <CardContent className="p-4">
+                          <h4 className="font-semibold">Dirección del local</h4>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {config?.address ? `${config.address}, ${config.city}` : "Barranquilla, Colombia"}
                           </p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="neighborhood">Barrio *</Label>
-                        <Input
-                          id="neighborhood"
-                          placeholder="Ej: Boston, El Prado"
-                          {...deliveryForm.register("neighborhood")}
-                        />
-                        {deliveryForm.formState.errors.neighborhood && (
-                          <p className="text-sm text-destructive">
-                            {deliveryForm.formState.errors.neighborhood.message}
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Horario hoy: {getBusinessHoursText()}
                           </p>
-                        )}
-                      </div>
-                    </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            )}
 
+            {/* Notes & Payment */}
+            {customer && canSubmitOrder() && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Detalles del Pedido</CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="space-y-2">
-                      <Label htmlFor="addressDetails">Detalles adicionales (opcional)</Label>
-                      <Input
-                        id="addressDetails"
-                        placeholder="Apto, edificio, punto de referencia..."
-                        {...deliveryForm.register("addressDetails")}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="notes">Notas del pedido (opcional)</Label>
+                      <Label htmlFor="notes">Notas adicionales (opcional)</Label>
                       <Textarea
                         id="notes"
-                        placeholder="Instrucciones especiales para tu pedido..."
+                        placeholder="Ej: Sin salsas, sin ripio, extra queso..."
                         rows={3}
-                        {...deliveryForm.register("notes")}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Instrucciones especiales para tu pedido
+                      </p>
                     </div>
+                  </CardContent>
+                </Card>
 
-                    {/* Save info checkbox */}
-                    <div className="flex items-start space-x-3 pt-2">
-                      <Checkbox
-                        id="save-info-delivery"
-                        checked={saveAddress}
-                        onCheckedChange={handleSaveAddressChange}
-                        disabled={!isAuthenticated && saveAddress}
-                      />
-                      <div className="grid gap-1.5 leading-none">
-                        <label
-                          htmlFor="save-info-delivery"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          Guardar mi información para próximos pedidos
-                        </label>
-                        <p className="text-xs text-muted-foreground">
-                          {isAuthenticated
-                            ? "Tu información se guardará de forma segura"
-                            : "Inicia sesión para guardar tu información"}
-                        </p>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Método de Pago</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <RadioGroup
+                      value={paymentMethod}
+                      onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="cash" id="cash" />
+                        <Label htmlFor="cash" className="cursor-pointer">
+                          Efectivo al recibir
+                        </Label>
                       </div>
-                    </div>
-
-                    {/* Login prompt for non-authenticated users */}
-                    {showLoginPrompt && !isAuthenticated && (
-                      <Card className="border-primary/20 bg-primary/5">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                              <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium">Guarda tu información</h4>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                Inicia sesión o crea una cuenta para guardar tu información y hacer pedidos más rápido.
-                              </p>
-                              <div className="flex gap-2 mt-3">
-                                <Button size="sm" variant="default" asChild>
-                                  <Link href="/?authRequired=true">
-                                    <LogIn className="mr-2 h-4 w-4" />
-                                    Iniciar sesión
-                                  </Link>
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => setShowLoginPrompt(false)}>
-                                  Ahora no
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="pickup" className="mt-6 space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="pickup-name">Nombre completo</Label>
-                        <Input
-                          id="pickup-name"
-                          placeholder="Tu nombre"
-                          {...pickupForm.register("customerName")}
-                        />
-                        {pickupForm.formState.errors.customerName && (
-                          <p className="text-sm text-destructive">
-                            {pickupForm.formState.errors.customerName.message}
-                          </p>
-                        )}
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="nequi" id="nequi" />
+                        <Label htmlFor="nequi" className="cursor-pointer">
+                          Nequi
+                        </Label>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="pickup-phone">Teléfono</Label>
-                        <Input
-                          id="pickup-phone"
-                          placeholder="3001234567"
-                          {...pickupForm.register("customerPhone")}
-                        />
-                        {pickupForm.formState.errors.customerPhone && (
-                          <p className="text-sm text-destructive">
-                            {pickupForm.formState.errors.customerPhone.message}
-                          </p>
-                        )}
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="daviplata" id="daviplata" />
+                        <Label htmlFor="daviplata" className="cursor-pointer">
+                          Daviplata
+                        </Label>
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="pickup-email">Correo electrónico (opcional)</Label>
-                      <Input
-                        id="pickup-email"
-                        type="email"
-                        placeholder="tu@email.com"
-                        {...pickupForm.register("customerEmail")}
-                      />
-                      {pickupForm.formState.errors.customerEmail && (
-                        <p className="text-sm text-destructive">
-                          {pickupForm.formState.errors.customerEmail.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="pickup-notes">Notas adicionales (opcional)</Label>
-                      <Textarea
-                        id="pickup-notes"
-                        placeholder="Indicaciones especiales"
-                        rows={3}
-                        {...pickupForm.register("notes")}
-                      />
-                    </div>
-
-                    {/* Save info checkbox */}
-                    <div className="flex items-start space-x-3 pt-2">
-                      <Checkbox
-                        id="save-info-pickup"
-                        checked={saveAddress}
-                        onCheckedChange={handleSaveAddressChange}
-                        disabled={!isAuthenticated && saveAddress}
-                      />
-                      <div className="grid gap-1.5 leading-none">
-                        <label
-                          htmlFor="save-info-pickup"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                        >
-                          Guardar mi información para próximos pedidos
-                        </label>
-                        <p className="text-xs text-muted-foreground">
-                          {isAuthenticated
-                            ? "Tu información se guardará de forma segura"
-                            : "Inicia sesión para guardar tu información"}
-                        </p>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="transfer" id="transfer" />
+                        <Label htmlFor="transfer" className="cursor-pointer">
+                          Transferencia bancaria
+                        </Label>
                       </div>
-                    </div>
-
-                    {/* Login prompt for non-authenticated users */}
-                    {showLoginPrompt && !isAuthenticated && (
-                      <Card className="border-primary/20 bg-primary/5">
-                        <CardContent className="p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                              <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium">Guarda tu información</h4>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                Inicia sesión o crea una cuenta para guardar tu información y hacer pedidos más rápido.
-                              </p>
-                              <div className="flex gap-2 mt-3">
-                                <Button size="sm" variant="default" asChild>
-                                  <Link href="/?authRequired=true">
-                                    <LogIn className="mr-2 h-4 w-4" />
-                                    Iniciar sesión
-                                  </Link>
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => setShowLoginPrompt(false)}>
-                                  Ahora no
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    <Card className="bg-muted">
-                      <CardContent className="p-4">
-                        <h4 className="font-semibold">Dirección del local</h4>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {config?.address ? `${config.address}, ${config.city}` : "Barranquilla, Colombia"}
-                        </p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          Horario hoy: {getBusinessHoursText()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Método de Pago</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(v) => setPaymentMethod(v as typeof paymentMethod)}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash">Efectivo al recibir</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="nequi" id="nequi" />
-                    <Label htmlFor="nequi">Nequi</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="daviplata" id="daviplata" />
-                    <Label htmlFor="daviplata">Daviplata</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="transfer" id="transfer" />
-                    <Label htmlFor="transfer">Transferencia bancaria</Label>
-                  </div>
-                </RadioGroup>
-              </CardContent>
-            </Card>
+                    </RadioGroup>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
 
+          {/* Order Summary */}
           <div>
             <Card className="sticky top-24">
               <CardHeader>
@@ -753,9 +648,7 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {items.length === 0 ? (
-                  <p className="text-center text-muted-foreground">
-                    No hay productos en el carrito
-                  </p>
+                  <p className="text-center text-muted-foreground">No hay productos en el carrito</p>
                 ) : (
                   <>
                     <div className="space-y-3">
@@ -786,7 +679,7 @@ export default function CheckoutPage() {
                       {orderType === "delivery" && (
                         <div className="flex justify-between">
                           <span>Domicilio</span>
-                          <span>{formatPrice(deliveryCost)}</span>
+                          <span>{deliveryCost > 0 ? formatPrice(deliveryCost) : "Gratis"}</span>
                         </div>
                       )}
                     </div>
@@ -809,9 +702,7 @@ export default function CheckoutPage() {
                         <div className="flex items-start gap-2">
                           <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
                           <div>
-                            <p className="font-medium text-amber-600 dark:text-amber-400">
-                              Fuera de horario
-                            </p>
+                            <p className="font-medium text-amber-600 dark:text-amber-400">Fuera de horario</p>
                             <p className="text-amber-600/80 dark:text-amber-400/80 mt-1">
                               {businessStatusMessage}
                             </p>
@@ -823,7 +714,13 @@ export default function CheckoutPage() {
                     <Button
                       className="w-full cursor-pointer"
                       size="lg"
-                      disabled={items.length === 0 || orderLoading || configLoading || !businessOpen}
+                      disabled={
+                        items.length === 0 ||
+                        orderLoading ||
+                        configLoading ||
+                        !businessOpen ||
+                        !canSubmitOrder()
+                      }
                       onClick={handleSubmit}
                     >
                       {orderLoading ? (
@@ -836,6 +733,12 @@ export default function CheckoutPage() {
                           <Clock className="mr-2 h-4 w-4" />
                           Cerrado
                         </>
+                      ) : !customer ? (
+                        "Ingresa tus datos"
+                      ) : orderType === "delivery" && !selectedAddressId ? (
+                        "Selecciona una dirección"
+                      ) : showNewAddressForm ? (
+                        "Guarda la dirección"
                       ) : (
                         "Confirmar Pedido"
                       )}

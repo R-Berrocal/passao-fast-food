@@ -100,14 +100,51 @@ export async function POST(request: NextRequest) {
       customerEmail,
       type,
       deliveryAddress,
+      addressId,
       notes,
       paymentMethod,
       paymentReference,
       items,
     } = result.data;
 
-    if (type === "delivery" && !deliveryAddress) {
+    if (type === "delivery" && !deliveryAddress && !addressId) {
       return errorResponse("La dirección de entrega es requerida para delivery");
+    }
+
+    // Find or create customer by phone
+    const normalizedPhone = customerPhone.replace(/[\s-]/g, "");
+    let customer = await prisma.user.findUnique({
+      where: { phone: normalizedPhone },
+    });
+
+    if (!customer) {
+      // Create new customer
+      customer = await prisma.user.create({
+        data: {
+          name: customerName,
+          phone: normalizedPhone,
+          role: "customer",
+          status: "active",
+        },
+      });
+    }
+
+    // Validate address if provided
+    let finalDeliveryAddress = deliveryAddress;
+    let validAddressId: string | undefined;
+
+    if (addressId) {
+      const address = await prisma.address.findUnique({
+        where: { id: addressId },
+      });
+
+      if (address && address.userId === customer.id) {
+        validAddressId = address.id;
+        // Use saved address if delivery address not provided
+        if (!finalDeliveryAddress) {
+          finalDeliveryAddress = address.address;
+        }
+      }
     }
 
     const productIds = items.map((item) => item.productId);
@@ -177,11 +214,13 @@ export async function POST(request: NextRequest) {
     const order = await prisma.order.create({
       data: {
         orderNumber,
+        userId: customer.id, // Link to customer
         customerName,
-        customerPhone,
+        customerPhone: normalizedPhone,
         customerEmail: customerEmail || null,
         type,
-        deliveryAddress: type === "delivery" ? deliveryAddress : null,
+        addressId: validAddressId || null,
+        deliveryAddress: type === "delivery" ? finalDeliveryAddress : null,
         subtotal,
         deliveryFee,
         total,

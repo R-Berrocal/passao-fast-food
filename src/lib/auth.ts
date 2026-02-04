@@ -16,7 +16,7 @@ export interface JwtPayload {
 export interface AuthUser {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   phone: string;
   role: UserRole;
 }
@@ -73,7 +73,7 @@ export async function getCurrentUser(request: NextRequest): Promise<AuthUser | n
   return {
     id: user.id,
     name: user.name,
-    email: user.email,
+    email: user.email || undefined,
     phone: user.phone,
     role: user.role as UserRole,
   };

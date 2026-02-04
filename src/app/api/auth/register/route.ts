@@ -20,12 +20,27 @@ export async function POST(request: NextRequest) {
 
     const { name, email, phone, password } = result.data;
 
+    // Check if phone is already registered
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { phone },
     });
 
     if (existingUser) {
-      return errorResponse("Este email ya está registrado", 409);
+      return errorResponse("Este número de teléfono ya está registrado", 409);
+    }
+
+    // Also check if email is used by admin/staff
+    if (email) {
+      const existingEmail = await prisma.user.findFirst({
+        where: {
+          email,
+          role: { in: ["admin", "staff"] },
+        },
+      });
+
+      if (existingEmail) {
+        return errorResponse("Este email ya está registrado", 409);
+      }
     }
 
     const hashedPassword = await hashPassword(password);
@@ -50,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const token = generateToken({
       userId: user.id,
-      email: user.email,
+      email: user.email || "",
       role: user.role,
     });
 

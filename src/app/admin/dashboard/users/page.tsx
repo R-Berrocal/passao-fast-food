@@ -54,8 +54,8 @@ import type { UserRole, UserStatus } from "@/types/models";
 interface UserWithCount {
   id: string;
   name: string;
-  email: string;
-  phone: string | null;
+  email?: string;
+  phone: string;
   role: UserRole;
   status: UserStatus;
   createdAt: Date | string;
@@ -135,7 +135,8 @@ export default function UsersPage() {
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase());
+      user.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
     const matchesRole = activeRole === "all" || user.role === activeRole;
     return matchesSearch && matchesRole;
   });

@@ -20,8 +20,12 @@ export async function POST(request: NextRequest) {
 
     const { email, password } = result.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Find user by email (admin/staff only - email is not unique anymore)
+    const user = await prisma.user.findFirst({
+      where: {
+        email,
+        role: { in: ["admin", "staff"] },
+      },
       select: {
         id: true,
         name: true,
@@ -48,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     const token = generateToken({
       userId: user.id,
-      email: user.email,
+      email: user.email || "",
       role: user.role,
     });
 

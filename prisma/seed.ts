@@ -251,10 +251,11 @@ async function main() {
 
   const adminEmail = process.env.ADMIN_EMAIL || "admin@passao.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "teamovalentina14";
+  const adminPhone = "3001234567";
 
-  // Verificar si el usuario admin ya existe
+  // Verificar si el usuario admin ya existe (por teléfono)
   const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail },
+    where: { phone: adminPhone },
   });
 
   if (!existingAdmin) {
@@ -265,7 +266,7 @@ async function main() {
       data: {
         name: "Administrador",
         email: adminEmail,
-        phone: "3001234567",
+        phone: adminPhone,
         password: hashedPassword,
         role: "admin",
         status: "active",
@@ -273,7 +274,7 @@ async function main() {
     });
     console.log(`✅ Usuario admin creado: ${adminEmail}`);
   } else {
-    console.log(`ℹ️ Usuario admin ya existe: ${adminEmail}`);
+    console.log(`ℹ️ Usuario admin ya existe: ${adminPhone}`);
   }
 
   console.log("✅ Seed completado exitosamente!");
