@@ -30,7 +30,8 @@ npm run db:reset     # Reset database and apply migrations
 - PostgreSQL + Prisma ORM
 - Tailwind CSS v4 with oklch color system
 - shadcn/ui components (Radix UI primitives)
-- Zustand for global state management
+- **TanStack Query** for server state management (data fetching, caching, mutations)
+- Zustand for client-side UI state (cart, theme preferences)
 - next-themes for dark/light mode
 - react-hook-form + zod for form handling
 - lucide-react for icons
@@ -45,7 +46,7 @@ npm run db:reset     # Reset database and apply migrations
 │   └── data-model.md           # Data model documentation
 └── src/
     ├── app/
-    │   ├── layout.tsx          # Root layout with ThemeProvider
+    │   ├── layout.tsx          # Root layout with providers
     │   ├── page.tsx            # Landing page (menu browsing)
     │   ├── checkout/           # Checkout flow (delivery/pickup)
     │   ├── api/                # Route handlers (REST API)
@@ -53,21 +54,28 @@ npm run db:reset     # Reset database and apply migrations
     │       └── dashboard/      # Full admin dashboard
     │           ├── layout.tsx  # Sidebar navigation layout
     │           ├── products/   # CRUD products
+    │           ├── additions/  # CRUD additions
+    │           ├── categories/ # CRUD categories
     │           ├── orders/     # Order management
     │           └── users/      # User management
     ├── components/
     │   ├── ui/                 # shadcn/ui primitives
+    │   ├── providers/          # QueryProvider, ThemeProvider, AuthProvider
     │   ├── layout/             # Navbar, Hero, Footer
     │   ├── menu/               # MenuItem, MenuList, AddToCartDialog
     │   └── cart/               # Cart drawer
+    ├── hooks/                  # TanStack Query hooks (useProducts, useCategories, etc.)
     ├── stores/
-    │   └── use-cart-store.ts   # Zustand store (cart + UI state)
+    │   ├── use-cart-store.ts   # Zustand store (cart + UI state)
+    │   └── use-auth-store.ts   # Auth state and helpers
     ├── types/
-    │   └── models.ts           # TypeScript types and helpers
-    ├── data/                   # Mock data (deprecated, use DB)
+    │   └── models.ts           # TypeScript types, ApiResponse<T>, and helpers
     └── lib/
         ├── utils.ts            # cn() utility for classnames
-        └── prisma.ts           # Prisma client singleton
+        ├── prisma.ts           # Prisma client singleton
+        ├── query-client.ts     # TanStack Query client singleton
+        ├── query-keys.ts       # Query key factory for cache management
+        └── fetch-functions.ts  # Server-side fetch functions for SSR prefetch
 ```
 
 ### Two Main User Flows
@@ -78,15 +86,72 @@ npm run db:reset     # Reset database and apply migrations
 
 ### Key Patterns
 
+#### Data Fetching with TanStack Query
+
+All data fetching uses TanStack Query for caching, optimistic updates, and automatic refetching.
+
+**Hook Pattern** (`src/hooks/use-*.ts`):
+```typescript
+// Query for fetching data
+const query = useQuery({
+  queryKey: queryKeys.products.list(options),
+  queryFn: () => fetchProducts(options),
+});
+
+// Mutations with optimistic updates
+const createMutation = useMutation({
+  mutationFn: async (data) => { ... },
+  onMutate: async (newData) => { /* optimistic update */ },
+  onError: (err, data, context) => { /* rollback */ },
+  onSuccess: () => { queryClient.invalidateQueries(...) },
+});
+```
+
+**SSR Prefetching Pattern** (`page.tsx` + `*-page-content.tsx`):
+```typescript
+// Server Component (page.tsx)
+export default async function Page() {
+  const queryClient = getQueryClient();
+  await queryClient.prefetchQuery({
+    queryKey: queryKeys.products.list(),
+    queryFn: () => fetchProducts(),
+  });
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <PageContent />
+    </HydrationBoundary>
+  );
+}
+
+// Client Component (*-page-content.tsx)
+export function PageContent() {
+  const { products } = useProducts(); // Data already hydrated from server
+  ...
+}
+```
+
+**Query Keys Factory** (`src/lib/query-keys.ts`):
+- Centralized query keys for type safety and cache management
+- Hierarchical structure: `queryKeys.products.list()`, `queryKeys.products.detail(id)`
+
+#### State Management
+
+- **Server State (TanStack Query)**: Products, categories, orders, users - anything from the API
+- **Client State (Zustand)**: Cart items, UI toggles, user preferences
+
 **Cart State (Zustand)**: Each cart item gets a unique `cartItemId` to allow the same product with different additions. Store also manages cart drawer open/close state.
+
+#### Other Patterns
 
 **Theme**: Dark mode default. Primary color is lime/yellow (oklch). Toggle uses CSS classes (`dark:block`/`block dark:hidden`) to avoid hydration issues. Theme state shared globally via next-themes provider.
 
-**Auth UI**: Navbar includes login/register dialogs. Authentication to be implemented with JWT.
+**Auth UI**: Navbar includes login/register dialogs. JWT-based authentication with admin route protection.
 
 **Database**: PostgreSQL with Prisma ORM. Schema in `prisma/schema.prisma`. Types and helpers in `src/types/models.ts`. Run `npm run db:seed` after migrations to populate initial data.
 
 **Component Pattern**: UI primitives in `components/ui/` follow shadcn/ui conventions with Radix UI, CVA variants, and the `cn()` utility.
+
+**API Response Type**: Use the centralized `ApiResponse<T>` from `@/types/models` for all API responses.
 
 **Images**: Unsplash URLs. Remote patterns configured in `next.config.ts`.
 
@@ -97,8 +162,11 @@ Use `@/*` to import from `src/*` (configured in tsconfig.json).
 
 ## Rules
 
-- Al momento de crear datos nuevos no uses Modales, usa paginas dedicadas para los formularios 
+- Al momento de crear datos nuevos no uses Modales, usa paginas dedicadas para los formularios
 - no uses server actions, usa Route handlers
-- para manejo de estado global usa Zustand
+- para manejo de estado global de UI usa Zustand, para estado del servidor usa TanStack Query
 - para formularios usar react-hook-form y zod
 - para las migraciones con prisma debes cambiar la variable de entorno por DIRECT_URL
+- usar el tipo `ApiResponse<T>` de `@/types/models` para todas las respuestas de API
+- para crear hooks de datos, seguir el patrón de TanStack Query con optimistic updates
+- para páginas admin, usar el patrón de SSR prefetch con `HydrationBoundary`

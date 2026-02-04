@@ -3,13 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthHeaders } from "@/stores/use-auth-store";
 import { queryKeys } from "@/lib/query-keys";
-import type { Addition } from "@/types/models";
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+import type { Addition, ApiResponse } from "@/types/models";
 
 // Fetch functions
 async function fetchAddition(id: string): Promise<Addition> {

@@ -3,13 +3,7 @@
  * These functions are used for SSR/ISR with TanStack Query prefetchQuery
  */
 
-import type { Addition, Product, Category, Order, User } from "@/types/models";
-
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+import type { Addition, Product, Category, Order, User, ApiResponse } from "@/types/models";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
