@@ -44,8 +44,10 @@ export function Navbar() {
   const navLinks = [
     { href: "#menu", label: "Menú", icon: UtensilsCrossed },
     { href: "#arepas", label: "Arepas", icon: CircleDot },
-    { href: "#perros", label: "Perros", icon: PawPrint },
+    { href: "#suizos", label: "Suizos", icon: Utensils },
+    { href: "#salchipapas", label: "Salchipapas", icon: Utensils },
     { href: "#patacones", label: "Patacones", icon: Utensils },
+    { href: "#perros", label: "Perros", icon: PawPrint },
   ];
 
   return (
