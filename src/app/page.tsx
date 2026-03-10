@@ -13,8 +13,8 @@ import { fetchBusinessConfig, fetchBusinessHours } from "@/lib/fetch-functions/b
 export default async function Home() {
   const queryClient = getQueryClient();
 
-  // Prefetch menu data in parallel for instant loading
-  await Promise.all([
+  // Prefetch menu data in parallel — allSettled prevents one failure from blocking the rest
+  await Promise.allSettled([
     queryClient.prefetchQuery({
       queryKey: queryKeys.additions.list({ showAll: false }),
       queryFn: () => fetchAdditions(false),

@@ -147,26 +147,6 @@ export default function ProductsPage() {
     }
   };
 
-  if (isLoading || categoriesLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="mt-2 h-4 w-64" />
-          </div>
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <Skeleton className="h-16 w-full" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-64 w-full" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -199,17 +179,21 @@ export default function ProductsPage() {
               />
             </div>
             <div className="w-full overflow-x-auto sm:w-auto">
-              <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-                <TabsList className="inline-flex w-max">
-                  <TabsTrigger value="all">Todos ({products.length})</TabsTrigger>
-                  {categories.map((cat) => (
-                    <TabsTrigger key={cat.id} value={cat.id}>
-                      {cat.name} (
-                      {products.filter((p) => p.categoryId === cat.id).length})
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+              {categoriesLoading ? (
+                <Skeleton className="h-10 w-64" />
+              ) : (
+                <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                  <TabsList className="inline-flex w-max">
+                    <TabsTrigger value="all">Todos ({products.length})</TabsTrigger>
+                    {categories.map((cat) => (
+                      <TabsTrigger key={cat.id} value={cat.id}>
+                        {cat.name} (
+                        {products.filter((p) => p.categoryId === cat.id).length})
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              )}
             </div>
           </div>
         </CardContent>
@@ -217,27 +201,37 @@ export default function ProductsPage() {
 
       {/* Products Grid */}
       <ScrollArea className="h-[calc(100vh-320px)]">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onDelete={() => handleDelete(product)}
-            />
-          ))}
-        </div>
-        {filteredProducts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <ImageIcon className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">
-              No se encontraron productos
-            </h3>
-            <p className="text-muted-foreground">
-              {products.length === 0
-                ? "Crea tu primer producto para comenzar"
-                : "Intenta ajustar los filtros de búsqueda"}
-            </p>
+        {isLoading ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-64 w-full" />
+            ))}
           </div>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onDelete={() => handleDelete(product)}
+                />
+              ))}
+            </div>
+            {filteredProducts.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">
+                  No se encontraron productos
+                </h3>
+                <p className="text-muted-foreground">
+                  {products.length === 0
+                    ? "Crea tu primer producto para comenzar"
+                    : "Intenta ajustar los filtros de búsqueda"}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </ScrollArea>
 

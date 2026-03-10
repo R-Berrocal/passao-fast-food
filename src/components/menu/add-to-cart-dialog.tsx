@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,9 +27,7 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
   const [selectedAdditions, setSelectedAdditions] = useState<CartItemAddition[]>([]);
   const addItem = useCartStore((state) => state.addItem);
 
-  if (!product) return null;
-
-  const toggleAddition = (addition: { id: string; name: string; price: number }) => {
+  const toggleAddition = useCallback((addition: { id: string; name: string; price: number }) => {
     setSelectedAdditions((prev) => {
       const exists = prev.find((a) => a.id === addition.id);
       if (exists) {
@@ -37,10 +35,20 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
       }
       return [...prev, { id: addition.id, name: addition.name, price: addition.price }];
     });
-  };
+  }, []);
 
-  const additionsTotal = selectedAdditions.reduce((sum, add) => sum + add.price, 0);
-  const totalPrice = product.price + additionsTotal;
+  const additionsTotal = useMemo(
+    () => selectedAdditions.reduce((sum, add) => sum + add.price, 0),
+    [selectedAdditions]
+  );
+  const totalPrice = product ? product.price + additionsTotal : 0;
+
+  const additionsText = useMemo(
+    () => selectedAdditions.map((a) => a.name).join(", "),
+    [selectedAdditions]
+  );
+
+  if (!product) return null;
 
   const handleAddToCart = () => {
     addItem(
@@ -133,7 +141,7 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
 
         {selectedAdditions.length > 0 && (
           <div className="text-sm text-muted-foreground">
-            Adiciones: {selectedAdditions.map((a) => a.name).join(", ")}
+            Adiciones: {additionsText}
           </div>
         )}
 

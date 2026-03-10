@@ -5,11 +5,15 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useCartStore, useCartTotal, formatPrice } from "@/stores/use-cart-store";
+import { useCartStore, useCartItems, useCartTotal, formatPrice } from "@/stores/use-cart-store";
 import Link from "next/link";
 
 export function Cart() {
-  const { items, removeItem, updateQuantity, clearCart, closeCart } = useCartStore();
+  const items = useCartItems();
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const closeCart = useCartStore((state) => state.closeCart);
   const total = useCartTotal();
 
   if (items.length === 0) {

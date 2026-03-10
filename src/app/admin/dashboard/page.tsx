@@ -46,102 +46,100 @@ function getStatusText(status: OrderStatus): string {
   return texts[status] || status;
 }
 
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+}
+
+function StatCard({ title, value, icon: Icon, color, bgColor }: StatCardProps) {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${bgColor}`}>
+            <Icon className={`h-6 w-6 ${color}`} />
+          </div>
+          <div className="flex items-center gap-1 text-sm text-green-500">
+            <ArrowUpRight className="h-4 w-4" />
+          </div>
+        </div>
+        <div className="mt-4">
+          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-sm text-muted-foreground">{title}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const { orders, isLoading: ordersLoading } = useOrders();
   const { products, isLoading: productsLoading } = useProducts();
   const { users, isLoading: usersLoading } = useUsers();
 
-  const isLoading = ordersLoading || productsLoading || usersLoading;
-
-  // Calculate stats from real data
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const todayOrders = orders.filter(
-    (o) => new Date(o.createdAt) >= todayStart
-  );
-
+  const todayOrders = orders.filter((o) => new Date(o.createdAt) >= todayStart);
   const todaySales = todayOrders.reduce((sum, o) => sum + o.total, 0);
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
   const preparingOrders = orders.filter((o) => o.status === "preparing").length;
-  const completedToday = todayOrders.filter(
-    (o) => o.status === "delivered"
-  ).length;
+  const completedToday = todayOrders.filter((o) => o.status === "delivered").length;
   const activeProducts = products.filter((p) => p.isActive).length;
   const customerCount = users.filter((u) => u.role === "customer").length;
 
-  const stats = [
-    {
-      title: "Ventas del Día",
-      value: formatPrice(todaySales),
-      icon: DollarSign,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
-    },
-    {
-      title: "Pedidos Hoy",
-      value: todayOrders.length.toString(),
-      icon: ShoppingCart,
-      color: "text-blue-500",
-      bgColor: "bg-blue-500/10",
-    },
-    {
-      title: "Productos Activos",
-      value: activeProducts.toString(),
-      icon: Package,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
-    },
-    {
-      title: "Clientes Registrados",
-      value: customerCount.toString(),
-      icon: Users,
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10",
-    },
-  ];
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 w-full" />
-          ))}
-        </div>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Skeleton className="lg:col-span-2 h-96" />
-          <div className="space-y-6">
-            <Skeleton className="h-52" />
-            <Skeleton className="h-52" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
+      {/* Stats Grid — each card loads independently */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-                <div className="flex items-center gap-1 text-sm text-green-500">
-                  <ArrowUpRight className="h-4 w-4" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.title}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {ordersLoading ? (
+          <>
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </>
+        ) : (
+          <>
+            <StatCard
+              title="Ventas del Día"
+              value={formatPrice(todaySales)}
+              icon={DollarSign}
+              color="text-green-500"
+              bgColor="bg-green-500/10"
+            />
+            <StatCard
+              title="Pedidos Hoy"
+              value={todayOrders.length.toString()}
+              icon={ShoppingCart}
+              color="text-blue-500"
+              bgColor="bg-blue-500/10"
+            />
+          </>
+        )}
+        {productsLoading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : (
+          <StatCard
+            title="Productos Activos"
+            value={activeProducts.toString()}
+            icon={Package}
+            color="text-purple-500"
+            bgColor="bg-purple-500/10"
+          />
+        )}
+        {usersLoading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : (
+          <StatCard
+            title="Clientes Registrados"
+            value={customerCount.toString()}
+            icon={Users}
+            color="text-orange-500"
+            bgColor="bg-orange-500/10"
+          />
+        )}
       </div>
 
       {/* Main Content Grid */}
@@ -155,56 +153,60 @@ export default function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-80">
-              <div className="space-y-4">
-                {orders.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <ShoppingCart className="h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 text-muted-foreground">
-                      No hay pedidos aún
-                    </p>
-                  </div>
-                ) : (
-                  orders.slice(0, 5).map((order) => (
-                    <div
-                      key={order.id}
-                      className="flex items-center justify-between rounded-lg border p-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                          <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{order.orderNumber}</p>
-                            <Badge
-                              variant="secondary"
-                              className={`${getStatusColor(order.status)} text-white text-xs`}
-                            >
-                              {getStatusText(order.status)}
-                            </Badge>
+            {ordersLoading ? (
+              <Skeleton className="h-80 w-full" />
+            ) : (
+              <ScrollArea className="h-80">
+                <div className="space-y-4">
+                  {orders.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+                      <p className="mt-4 text-muted-foreground">
+                        No hay pedidos aún
+                      </p>
+                    </div>
+                  ) : (
+                    orders.slice(0, 5).map((order) => (
+                      <div
+                        key={order.id}
+                        className="flex items-center justify-between rounded-lg border p-4"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                            <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {order.customerName} • {order.items.length} items
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{order.orderNumber}</p>
+                              <Badge
+                                variant="secondary"
+                                className={`${getStatusColor(order.status)} text-white text-xs`}
+                              >
+                                {getStatusText(order.status)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {order.customerName} • {order.items.length} items
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-primary">
+                            {formatPrice(order.total)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(order.createdAt).toLocaleTimeString("es-CO", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-primary">
-                          {formatPrice(order.total)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(order.createdAt).toLocaleTimeString("es-CO", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            )}
           </CardContent>
         </Card>
 
@@ -215,28 +217,38 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Estado de Pedidos</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg bg-yellow-500/10 p-4">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 text-yellow-500" />
-                  <span className="font-medium">Pendientes</span>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
                 </div>
-                <span className="text-2xl font-bold text-yellow-500">{pendingOrders}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-blue-500/10 p-4">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="h-5 w-5 text-blue-500" />
-                  <span className="font-medium">En Preparación</span>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between rounded-lg bg-yellow-500/10 p-4">
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-yellow-500" />
+                      <span className="font-medium">Pendientes</span>
+                    </div>
+                    <span className="text-2xl font-bold text-yellow-500">{pendingOrders}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-blue-500/10 p-4">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="h-5 w-5 text-blue-500" />
+                      <span className="font-medium">En Preparación</span>
+                    </div>
+                    <span className="text-2xl font-bold text-blue-500">{preparingOrders}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-green-500/10 p-4">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <span className="font-medium">Completados Hoy</span>
+                    </div>
+                    <span className="text-2xl font-bold text-green-500">{completedToday}</span>
+                  </div>
                 </div>
-                <span className="text-2xl font-bold text-blue-500">{preparingOrders}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-green-500/10 p-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <span className="font-medium">Completados Hoy</span>
-                </div>
-                <span className="text-2xl font-bold text-green-500">{completedToday}</span>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -278,33 +290,41 @@ export default function DashboardPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {products.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
-                <Package className="h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 text-muted-foreground">
-                  No hay productos aún
-                </p>
-              </div>
-            ) : (
-              products.slice(0, 4).map((product, idx) => (
-                <div key={product.id} className="rounded-lg border p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium line-clamp-1">{product.name}</span>
-                    <Badge variant="secondary">#{idx + 1}</Badge>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-2xl font-bold text-primary">
-                      {formatPrice(product.price)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {product.category?.name || "Sin categoría"}
-                    </p>
-                  </div>
+          {productsLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-28 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {products.length === 0 ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-8 text-center">
+                  <Package className="h-12 w-12 text-muted-foreground" />
+                  <p className="mt-4 text-muted-foreground">
+                    No hay productos aún
+                  </p>
                 </div>
-              ))
-            )}
-          </div>
+              ) : (
+                products.slice(0, 4).map((product, idx) => (
+                  <div key={product.id} className="rounded-lg border p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium line-clamp-1">{product.name}</span>
+                      <Badge variant="secondary">#{idx + 1}</Badge>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-2xl font-bold text-primary">
+                        {formatPrice(product.price)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {product.category?.name || "Sin categoría"}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

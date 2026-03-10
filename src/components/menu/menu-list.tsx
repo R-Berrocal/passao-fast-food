@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useCategories } from "@/hooks/use-categories";
 import { useProducts } from "@/hooks/use-products";
 import { useAdditions } from "@/hooks/use-additions";
@@ -15,6 +16,17 @@ export function MenuList() {
   const { additions, isLoading: additionsLoading } = useAdditions();
 
   const isLoading = categoriesLoading || productsLoading || additionsLoading;
+
+  const categoriesWithProducts = useMemo(
+    () =>
+      categories
+        .filter((category) => products.some((p) => p.categoryId === category.id))
+        .map((category) => ({
+          ...category,
+          products: products.filter((p) => p.categoryId === category.id),
+        })),
+    [categories, products]
+  );
 
   if (isLoading) {
     return (
@@ -42,13 +54,6 @@ export function MenuList() {
       </section>
     );
   }
-
-  const categoriesWithProducts = categories
-    .filter((category) => products.some((p) => p.categoryId === category.id))
-    .map((category) => ({
-      ...category,
-      products: products.filter((p) => p.categoryId === category.id),
-    }));
 
   return (
     <section id="menu" className="py-16">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -145,8 +145,8 @@ export default function CheckoutPage() {
     return null;
   };
 
-  const businessOpen = isBusinessOpen();
-  const businessStatusMessage = getBusinessStatusMessage();
+  const businessOpen = useMemo(() => isBusinessOpen(), [hours]);
+  const businessStatusMessage = useMemo(() => getBusinessStatusMessage(), [hours]);
   const deliveryCost = orderType === "delivery" ? (config?.deliveryFee || 0) : 0;
   const finalTotal = total + deliveryCost;
 

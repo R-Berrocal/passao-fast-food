@@ -88,6 +88,10 @@ export const useCartStore = create<CartState>()(
   )
 );
 
+export const useCartItems = () => useCartStore((state) => state.items);
+
+export const useCartIsOpen = () => useCartStore((state) => state.isOpen);
+
 export const useCartTotal = () =>
   useCartStore((state) =>
     state.items.reduce((acc, item) => acc + item.totalPrice * item.quantity, 0)

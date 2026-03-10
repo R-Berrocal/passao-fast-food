@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { Addition, Category, Product } from "@/types/models";
 import { MenuItem } from "./menu-item";
 
@@ -10,7 +11,7 @@ interface MenuSectionProps {
   additions: Addition[];
 }
 
-export function MenuSection({ category, additions }: MenuSectionProps) {
+export const MenuSection = memo(function MenuSection({ category, additions }: MenuSectionProps) {
   return (
     <section id={category.slug} className="scroll-mt-20">
       <div className="mb-6">
@@ -27,4 +28,4 @@ export function MenuSection({ category, additions }: MenuSectionProps) {
       </div>
     </section>
   );
-}
+});

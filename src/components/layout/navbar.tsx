@@ -21,16 +21,27 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { useCartStore, useCartItemCount } from "@/stores/use-cart-store";
+import { useCartStore, useCartItemCount, useCartIsOpen } from "@/stores/use-cart-store";
 import { Cart } from "@/components/cart/cart";
 import { useState } from "react";
 import { useBusinessConfig } from "@/hooks/use-business";
 import { useMounted } from "@/hooks/use-mounted";
 
+const navLinks = [
+  { href: "#menu", label: "Menú", icon: UtensilsCrossed },
+  { href: "#arepas", label: "Arepas", icon: CircleDot },
+  { href: "#suizos", label: "Suizos", icon: Utensils },
+  { href: "#salchipapas", label: "Salchipapas", icon: Utensils },
+  { href: "#patacones", label: "Patacones", icon: Utensils },
+  { href: "#perros", label: "Perros", icon: PawPrint },
+];
+
 export function Navbar() {
   const { setTheme, resolvedTheme } = useTheme();
   const itemCount = useCartItemCount();
-  const { isOpen, openCart, closeCart } = useCartStore();
+  const isOpen = useCartIsOpen();
+  const openCart = useCartStore((state) => state.openCart);
+  const closeCart = useCartStore((state) => state.closeCart);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mounted = useMounted();
 
@@ -40,15 +51,6 @@ export function Navbar() {
   const logoUrl = config?.logoUrl;
 
   if (!mounted) return null;
-
-  const navLinks = [
-    { href: "#menu", label: "Menú", icon: UtensilsCrossed },
-    { href: "#arepas", label: "Arepas", icon: CircleDot },
-    { href: "#suizos", label: "Suizos", icon: Utensils },
-    { href: "#salchipapas", label: "Salchipapas", icon: Utensils },
-    { href: "#patacones", label: "Patacones", icon: Utensils },
-    { href: "#perros", label: "Perros", icon: PawPrint },
-  ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-black/10 dark:border-white/10 bg-primary dark:bg-zinc-900/95 backdrop-blur-sm">

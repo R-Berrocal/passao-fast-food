@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ interface MenuItemProps {
   additions: Addition[];
 }
 
-export function MenuItem({ product, additions }: MenuItemProps) {
+export const MenuItem = memo(function MenuItem({ product, additions }: MenuItemProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -65,4 +65,4 @@ export function MenuItem({ product, additions }: MenuItemProps) {
       />
     </>
   );
-}
+});
