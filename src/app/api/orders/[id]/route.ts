@@ -60,6 +60,46 @@ export async function GET(request: NextRequest, { params }: Params) {
   }
 }
 
+export async function PATCH(request: NextRequest, { params }: Params) {
+  try {
+    const staff = await requireStaff(request);
+    if (!staff) {
+      return unauthorizedResponse("Solo el personal puede editar órdenes");
+    }
+
+    const { id } = await params;
+
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order) {
+      return notFoundResponse("Orden");
+    }
+
+    const body = await request.json();
+    const { customerName, customerPhone, customerEmail, deliveryAddress, notes, adminNotes, paymentMethod } = body;
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: {
+        ...(customerName !== undefined && { customerName }),
+        ...(customerPhone !== undefined && { customerPhone }),
+        ...(customerEmail !== undefined && { customerEmail }),
+        ...(deliveryAddress !== undefined && { deliveryAddress }),
+        ...(notes !== undefined && { notes }),
+        ...(adminNotes !== undefined && { adminNotes }),
+        ...(paymentMethod !== undefined && { paymentMethod }),
+      },
+      include: {
+        items: { include: { additions: true } },
+      },
+    });
+
+    return successResponse(updated);
+  } catch (error) {
+    console.error("Update order error:", error);
+    return serverErrorResponse();
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     const staff = await requireStaff(request);

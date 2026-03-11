@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   Eye,
@@ -15,6 +16,9 @@ import {
   Package,
   XCircle,
   Plus,
+  Pencil,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +31,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -61,13 +67,19 @@ function StatusIcon({ status }: { status: OrderStatus }) {
 function OrderCard({
   order,
   onView,
+  onEdit,
+  onDelete,
   onStatusChange,
   isUpdating,
+  isDeleting,
 }: {
   order: OrderWithItems;
   onView: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
   onStatusChange: (status: OrderStatus) => void;
   isUpdating: boolean;
+  isDeleting: boolean;
 }) {
   const statusConfig = ORDER_STATUS_CONFIG[order.status];
 
@@ -147,38 +159,71 @@ function OrderCard({
 
         <Separator />
 
-        <div className="flex items-center justify-between p-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Total</p>
-            <p className="text-xl font-bold text-primary">
-              {formatPrice(order.total)}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={onView} className="h-9">
-              <Eye className="mr-2 h-4 w-4" />
-              Ver
-            </Button>
-            {order.status !== "delivered" && order.status !== "cancelled" && (
-              <Select
-                value={order.status}
-                onValueChange={(value) => onStatusChange(value as OrderStatus)}
-                disabled={isUpdating}
+        <div className="p-4 space-y-3">
+          {/* Fila 1: precio + acciones */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total</p>
+              <p className="text-2xl font-bold text-primary leading-tight">
+                {formatPrice(order.total)}
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onView}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Ver detalle"
               >
-                <SelectTrigger className="h-9 w-[130px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="confirmed">Confirmado</SelectItem>
-                  <SelectItem value="preparing">Preparando</SelectItem>
-                  <SelectItem value="ready">Listo</SelectItem>
-                  <SelectItem value="delivered">Entregado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onEdit}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title="Editar orden"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onDelete}
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                disabled={isDeleting}
+                title="Eliminar orden"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
+
+          {/* Fila 2: selector de estado (ancho completo) */}
+          {order.status !== "delivered" && order.status !== "cancelled" && (
+            <Select
+              value={order.status}
+              onValueChange={(value) => onStatusChange(value as OrderStatus)}
+              disabled={isUpdating}
+            >
+              <SelectTrigger className="h-8 w-full text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendiente</SelectItem>
+                <SelectItem value="confirmed">Confirmado</SelectItem>
+                <SelectItem value="preparing">Preparando</SelectItem>
+                <SelectItem value="ready">Listo</SelectItem>
+                <SelectItem value="delivered">Entregado</SelectItem>
+                <SelectItem value="cancelled">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -186,13 +231,16 @@ function OrderCard({
 }
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStatus, setActiveStatus] = useState("all");
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<OrderWithItems | null>(null);
 
-  const { orders, isLoading, updateOrderStatus } = useOrders();
+  const { orders, isLoading, updateOrderStatus, deleteOrder } = useOrders();
 
   const orderStats = {
     pending: orders.filter((o) => o.status === "pending").length,
@@ -219,6 +267,14 @@ export default function OrdersPage() {
     setUpdatingOrderId(orderId);
     await updateOrderStatus(orderId, status);
     setUpdatingOrderId(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!orderToDelete) return;
+    setDeletingOrderId(orderToDelete.id);
+    await deleteOrder(orderToDelete.id);
+    setDeletingOrderId(null);
+    setOrderToDelete(null);
   };
 
   if (isLoading) {
@@ -355,8 +411,11 @@ export default function OrdersPage() {
               key={order.id}
               order={order}
               onView={() => handleViewOrder(order)}
+              onEdit={() => router.push(`/admin/dashboard/orders/${order.id}/edit`)}
+              onDelete={() => setOrderToDelete(order)}
               onStatusChange={(status) => handleStatusChange(order.id, status)}
               isUpdating={updatingOrderId === order.id}
+              isDeleting={deletingOrderId === order.id}
             />
           ))}
         </div>
@@ -493,6 +552,48 @@ export default function OrdersPage() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!orderToDelete}
+        onOpenChange={(open) => !open && setOrderToDelete(null)}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Eliminar orden</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar la orden{" "}
+              <strong>{orderToDelete?.orderNumber}</strong>? Esta acción no se
+              puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setOrderToDelete(null)}
+              disabled={!!deletingOrderId}
+              className="cursor-pointer"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={!!deletingOrderId}
+              className="cursor-pointer"
+            >
+              {deletingOrderId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

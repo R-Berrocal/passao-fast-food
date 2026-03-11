@@ -95,6 +95,49 @@ export async function createOrder(data: unknown): Promise<Order> {
   return result.data;
 }
 
+export async function deleteOrder(id: string): Promise<void> {
+  const response = await fetch(`${getBaseUrl()}/api/orders/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  const result: ApiResponse<unknown> = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.error || "Error al eliminar la orden");
+  }
+}
+
+export async function updateOrder(
+  id: string,
+  data: {
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    deliveryAddress?: string;
+    notes?: string;
+    adminNotes?: string;
+    paymentMethod?: string;
+  }
+): Promise<Order> {
+  const response = await fetch(`${getBaseUrl()}/api/orders/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result: ApiResponse<Order> = await response.json();
+
+  if (!result.success || !result.data) {
+    throw new Error(result.error || "Error al actualizar la orden");
+  }
+
+  return result.data;
+}
+
 export async function createManualOrder(data: unknown): Promise<Order> {
   const response = await fetch(`${getBaseUrl()}/api/admin/orders`, {
     method: "POST",

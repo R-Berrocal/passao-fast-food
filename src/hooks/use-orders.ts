@@ -5,6 +5,8 @@ import { queryKeys } from "@/lib/query-keys";
 import {
   fetchOrders,
   updateOrderStatus as updateOrderStatusFn,
+  deleteOrder as deleteOrderFn,
+  updateOrder as updateOrderFn,
   createOrder as createOrderFn,
   createManualOrder as createManualOrderFn,
 } from "@/lib/fetch-functions/orders";
@@ -50,6 +52,44 @@ export function useOrders(options: UseOrdersOptions = {}) {
     },
   });
 
+  // Mutation for deleting an order
+  const deleteOrderMutation = useMutation({
+    mutationFn: (id: string) => deleteOrderFn(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+    },
+  });
+
+  const deleteOrder = async (id: string): Promise<boolean> => {
+    try {
+      await deleteOrderMutation.mutateAsync(id);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // Mutation for updating order details
+  const updateOrderMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof updateOrderFn>[1] }) =>
+      updateOrderFn(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+    },
+  });
+
+  const updateOrder = async (
+    id: string,
+    data: Parameters<typeof updateOrderFn>[1]
+  ): Promise<boolean> => {
+    try {
+      await updateOrderMutation.mutateAsync({ id, data });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const updateOrderStatus = async (
     id: string,
     status: OrderStatus,
@@ -69,6 +109,8 @@ export function useOrders(options: UseOrdersOptions = {}) {
     error: error ? (error as Error).message : null,
     refetch,
     updateOrderStatus,
+    deleteOrder,
+    updateOrder,
     clearError: () => {}, // No-op for API consistency
   };
 }
