@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { Check, Plus } from "lucide-react";
+import { Check, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +25,7 @@ interface AddToCartDialogProps {
 
 export function AddToCartDialog({ product, additions, open, onOpenChange }: AddToCartDialogProps) {
   const [selectedAdditions, setSelectedAdditions] = useState<CartItemAddition[]>([]);
+  const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore((state) => state.addItem);
 
   const toggleAddition = useCallback((addition: { id: string; name: string; price: number }) => {
@@ -41,7 +42,8 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
     () => selectedAdditions.reduce((sum, add) => sum + add.price, 0),
     [selectedAdditions]
   );
-  const totalPrice = product ? product.price + additionsTotal : 0;
+  const unitPrice = product ? product.price + additionsTotal : 0;
+  const totalPrice = unitPrice * quantity;
 
   const additionsText = useMemo(
     () => selectedAdditions.map((a) => a.name).join(", "),
@@ -59,15 +61,18 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
         description: product.description,
         image: product.image,
       },
-      selectedAdditions
+      selectedAdditions,
+      quantity
     );
     setSelectedAdditions([]);
+    setQuantity(1);
     onOpenChange(false);
     // openCart();
   };
 
   const handleClose = () => {
     setSelectedAdditions([]);
+    setQuantity(1);
     onOpenChange(false);
   };
 
@@ -136,7 +141,26 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
 
         <div className="flex items-center justify-between py-2">
           <span className="text-lg font-semibold">Total</span>
-          <span className="text-xl font-bold text-primary">{formatPrice(totalPrice)}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                disabled={quantity <= 1}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border transition-colors hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Minus className="h-3 w-3" />
+              </button>
+              <span className="w-6 text-center font-semibold">{quantity}</span>
+              <button
+                onClick={() => setQuantity((q) => Math.min(10, q + 1))}
+                disabled={quantity >= 10}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-border transition-colors hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            </div>
+            <span className="text-xl font-bold text-primary">{formatPrice(totalPrice)}</span>
+          </div>
         </div>
 
         {selectedAdditions.length > 0 && (

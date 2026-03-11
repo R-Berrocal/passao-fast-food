@@ -25,7 +25,7 @@ export interface CartItem extends CartProduct {
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
-  addItem: (item: CartProduct, additions?: CartItemAddition[]) => void;
+  addItem: (item: CartProduct, additions?: CartItemAddition[], quantity?: number) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -42,7 +42,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       isOpen: false,
 
-      addItem: (item, additions = []) =>
+      addItem: (item, additions = [], quantity = 1) =>
         set((state) => {
           const additionsTotal = additions.reduce((sum, add) => sum + add.price, 0);
           const totalPrice = item.price + additionsTotal;
@@ -50,7 +50,7 @@ export const useCartStore = create<CartState>()(
           const newItem: CartItem = {
             ...item,
             cartItemId: generateCartItemId(),
-            quantity: 1,
+            quantity,
             additions,
             totalPrice,
           };
