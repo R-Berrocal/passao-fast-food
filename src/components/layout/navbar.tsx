@@ -32,6 +32,7 @@ const navLinks = [
   { href: "#arepas", label: "Arepas", icon: CircleDot },
   { href: "#suizos", label: "Suizos", icon: Utensils },
   { href: "#salchipapas", label: "Salchipapas", icon: Utensils },
+  { href: "#desgranados", label: "Desgranados", icon: Utensils },
   { href: "#patacones", label: "Patacones", icon: Utensils },
   { href: "#perros", label: "Perros", icon: PawPrint },
 ];
