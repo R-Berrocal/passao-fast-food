@@ -82,4 +82,17 @@ export const queryKeys = {
     config: () => [...queryKeys.business.all(), "config"] as const,
     hours: () => [...queryKeys.business.all(), "hours"] as const,
   },
+
+  // Supplies
+  supplies: {
+    all: () => ["supplies"] as const,
+    lists: () => [...queryKeys.supplies.all(), "list"] as const,
+    list: (date?: string) => [...queryKeys.supplies.lists(), date] as const,
+  },
+
+  // Reports
+  reports: {
+    all: () => ["reports"] as const,
+    daily: (date: string) => [...queryKeys.reports.all(), "daily", date] as const,
+  },
 } as const;

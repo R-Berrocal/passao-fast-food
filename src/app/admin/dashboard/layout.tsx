@@ -18,6 +18,8 @@ import {
   CirclePlus,
   ExternalLink,
   Settings,
+  ShoppingBag,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,6 +33,7 @@ const navigation = [
     name: "Dashboard",
     href: "/admin/dashboard",
     icon: LayoutDashboard,
+    exactMatch: true,
   },
   {
     name: "Productos",
@@ -46,6 +49,16 @@ const navigation = [
     name: "Órdenes",
     href: "/admin/dashboard/orders",
     icon: ShoppingCart,
+  },
+  {
+    name: "Insumos",
+    href: "/admin/dashboard/supplies",
+    icon: ShoppingBag,
+  },
+  {
+    name: "Reporte",
+    href: "/admin/dashboard/reports",
+    icon: BarChart3,
   },
   {
     name: "Usuarios",
@@ -134,7 +147,9 @@ export default function DashboardLayout({
           <ScrollArea className="flex-1 py-4">
             <nav className="space-y-1 px-3">
               {navigation.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = item.exactMatch
+                  ? pathname === item.href
+                  : pathname.startsWith(item.href);
                 return (
                   <Link
                     key={item.name}
@@ -193,7 +208,9 @@ export default function DashboardLayout({
 
           <div className="flex flex-1 items-center justify-between">
             <h1 className="text-lg font-semibold">
-              {navigation.find((item) => item.href === pathname)?.name || "Dashboard"}
+              {navigation.find((item) =>
+                item.exactMatch ? pathname === item.href : pathname.startsWith(item.href)
+              )?.name || "Dashboard"}
             </h1>
 
             <div className="flex items-center gap-3">

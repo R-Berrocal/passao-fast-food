@@ -94,3 +94,20 @@ export async function createOrder(data: unknown): Promise<Order> {
 
   return result.data;
 }
+
+export async function createManualOrder(data: unknown): Promise<Order> {
+  const response = await fetch(`${getBaseUrl()}/api/admin/orders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+
+  const result: ApiResponse<Order> = await response.json();
+  if (!result.success || !result.data) {
+    throw new Error(result.error || "Error al crear orden");
+  }
+  return result.data;
+}

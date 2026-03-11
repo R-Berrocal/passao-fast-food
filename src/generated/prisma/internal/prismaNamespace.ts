@@ -395,7 +395,8 @@ export const ModelName = {
   BusinessHours: 'BusinessHours',
   BusinessConfig: 'BusinessConfig',
   DailySales: 'DailySales',
-  ProductSales: 'ProductSales'
+  ProductSales: 'ProductSales',
+  SupplyPurchase: 'SupplyPurchase'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "address" | "category" | "product" | "addition" | "order" | "orderItem" | "orderItemAddition" | "businessHours" | "businessConfig" | "dailySales" | "productSales"
+    modelProps: "user" | "address" | "category" | "product" | "addition" | "order" | "orderItem" | "orderItemAddition" | "businessHours" | "businessConfig" | "dailySales" | "productSales" | "supplyPurchase"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1303,6 +1304,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SupplyPurchase: {
+      payload: Prisma.$SupplyPurchasePayload<ExtArgs>
+      fields: Prisma.SupplyPurchaseFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SupplyPurchaseFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SupplyPurchaseFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>
+        }
+        findFirst: {
+          args: Prisma.SupplyPurchaseFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SupplyPurchaseFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>
+        }
+        findMany: {
+          args: Prisma.SupplyPurchaseFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>[]
+        }
+        create: {
+          args: Prisma.SupplyPurchaseCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>
+        }
+        createMany: {
+          args: Prisma.SupplyPurchaseCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SupplyPurchaseCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>[]
+        }
+        delete: {
+          args: Prisma.SupplyPurchaseDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>
+        }
+        update: {
+          args: Prisma.SupplyPurchaseUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>
+        }
+        deleteMany: {
+          args: Prisma.SupplyPurchaseDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SupplyPurchaseUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SupplyPurchaseUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>[]
+        }
+        upsert: {
+          args: Prisma.SupplyPurchaseUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SupplyPurchasePayload>
+        }
+        aggregate: {
+          args: Prisma.SupplyPurchaseAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSupplyPurchase>
+        }
+        groupBy: {
+          args: Prisma.SupplyPurchaseGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SupplyPurchaseGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SupplyPurchaseCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SupplyPurchaseCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1536,6 +1611,20 @@ export const ProductSalesScalarFieldEnum = {
 } as const
 
 export type ProductSalesScalarFieldEnum = (typeof ProductSalesScalarFieldEnum)[keyof typeof ProductSalesScalarFieldEnum]
+
+
+export const SupplyPurchaseScalarFieldEnum = {
+  id: 'id',
+  description: 'description',
+  category: 'category',
+  amount: 'amount',
+  date: 'date',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SupplyPurchaseScalarFieldEnum = (typeof SupplyPurchaseScalarFieldEnum)[keyof typeof SupplyPurchaseScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1835,6 +1924,7 @@ export type GlobalOmitConfig = {
   businessConfig?: Prisma.BusinessConfigOmit
   dailySales?: Prisma.DailySalesOmit
   productSales?: Prisma.ProductSalesOmit
+  supplyPurchase?: Prisma.SupplyPurchaseOmit
 }
 
 /* Types for Logging */

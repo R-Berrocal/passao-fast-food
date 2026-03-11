@@ -185,3 +185,19 @@ Use `@/*` to import from `src/*` (configured in tsconfig.json).
 - para crear hooks de datos, seguir el patrón de TanStack Query con optimistic updates
 - para páginas admin, usar el patrón client-only (sin SSR prefetch) para mejor caching
 - para páginas públicas (landing, menú), usar SSR prefetch con `HydrationBoundary`
+- cuando ejecutes el comando npm run db:push debes cambiar la variable de entorno en la conexion de prisma por DIRECT_URL en el archivo prisma.config.ts
+```
+import "dotenv/config";
+import { defineConfig } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+    seed: "prisma/seed.ts",
+  },
+  datasource: {
+    url: process.env.DIRECT_URL!,
+  },
+});
+```

@@ -285,3 +285,38 @@ export const DAY_OF_WEEK_CONFIG: Record<DayOfWeek, { text: string; short: string
   saturday: { text: "Sábado", short: "Sáb" },
   sunday: { text: "Domingo", short: "Dom" },
 };
+
+// ============================================================================
+// SUPPLIES & REPORTS
+// ============================================================================
+
+export interface SupplyPurchase {
+  id: string;
+  description: string;
+  category: string;
+  amount: number;
+  date: Date;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface DailyReport {
+  date: string;
+  sales: {
+    totalOrders: number;
+    totalRevenue: number;
+    cashRevenue: number;
+    digitalRevenue: number;
+    byPaymentMethod: {
+      method: PaymentMethod;
+      count: number;
+      total: number;
+    }[];
+  };
+  supplies: {
+    totalPurchases: number;
+    totalSpent: number;
+  };
+  balance: number;
+}

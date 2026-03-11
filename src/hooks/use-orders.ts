@@ -6,6 +6,7 @@ import {
   fetchOrders,
   updateOrderStatus as updateOrderStatusFn,
   createOrder as createOrderFn,
+  createManualOrder as createManualOrderFn,
 } from "@/lib/fetch-functions/orders";
 import type { OrderStatus } from "@/types/models";
 import type { CreateOrderInput } from "@/lib/validations/order";
@@ -99,6 +100,38 @@ export function useCreateOrder() {
 
   return {
     createOrder,
+    isLoading: mutation.isPending,
+    error: mutation.error ? (mutation.error as Error).message : null,
+    clearError: mutation.reset,
+  };
+}
+
+// ============================================================================
+// Create Manual Order Hook (Admin)
+// ============================================================================
+
+export function useCreateManualOrder() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (data: unknown) => {
+      return createManualOrderFn(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+    },
+  });
+
+  const createManualOrder = async (data: unknown) => {
+    try {
+      return await mutation.mutateAsync(data);
+    } catch {
+      return null;
+    }
+  };
+
+  return {
+    createManualOrder,
     isLoading: mutation.isPending,
     error: mutation.error ? (mutation.error as Error).message : null,
     clearError: mutation.reset,

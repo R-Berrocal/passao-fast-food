@@ -324,3 +324,17 @@ model ProductSales {
   @@index([productId])
   @@map("product_sales")
 }
+
+model SupplyPurchase {
+  id          String   @id @default(cuid())
+  description String
+  category    String
+  amount      Int
+  date        DateTime @db.Date
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@map("supply_purchases")
+}

@@ -99,3 +99,8 @@ export type DailySales = Prisma.DailySalesModel
  * 
  */
 export type ProductSales = Prisma.ProductSalesModel
+/**
+ * Model SupplyPurchase
+ * 
+ */
+export type SupplyPurchase = Prisma.SupplyPurchaseModel

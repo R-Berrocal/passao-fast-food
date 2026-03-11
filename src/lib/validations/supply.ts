@@ -1,0 +1,14 @@
+import { z } from "zod";
+
+export const SUPPLY_CATEGORIES = ["Ingredientes", "Empaques", "Bebidas", "Servicios", "Otros"] as const;
+export type SupplyCategory = typeof SUPPLY_CATEGORIES[number];
+
+export const createSupplySchema = z.object({
+  description: z.string().min(2, "La descripción es requerida"),
+  category: z.enum(SUPPLY_CATEGORIES, { error: () => ({ message: "Categoría inválida" }) }),
+  amount: z.number().int().positive("El monto debe ser mayor a 0"),
+  date: z.coerce.date(),
+  notes: z.string().optional(),
+});
+
+export type CreateSupplyInput = z.infer<typeof createSupplySchema>;
