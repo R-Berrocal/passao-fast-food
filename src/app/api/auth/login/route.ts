@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, generateToken } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations/auth";
@@ -37,12 +37,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!user || !user.password) {
+    if (!user) {
       return errorResponse("Email o contraseña incorrectos", 401);
     }
 
     if (user.status !== "active") {
       return errorResponse("Tu cuenta está desactivada", 403);
+    }
+
+    if (!user.password) {
+      return NextResponse.json(
+        { success: false, code: "NO_PASSWORD", error: "Sin contraseña configurada" },
+        { status: 403 }
+      );
     }
 
     const isPasswordValid = await verifyPassword(password, user.password);

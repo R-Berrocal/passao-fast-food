@@ -48,8 +48,9 @@ export async function proxy(request: NextRequest) {
 
   const token = getTokenFromCookieOrHeader(request);
 
-  // Allow access to login page without authentication
-  if (pathname === "/admin/login") {
+  // Allow access to public admin pages without authentication
+  const publicPaths = ["/admin/login", "/admin/setup-password"];
+  if (publicPaths.includes(pathname)) {
     return NextResponse.next();
   }
 

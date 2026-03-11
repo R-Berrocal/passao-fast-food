@@ -20,6 +20,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isUnauthorized = searchParams.get("unauthorized") === "true";
+  const isPasswordSet = searchParams.get("passwordSet") === "true";
   const redirectTo = searchParams.get("redirect") || "/admin/dashboard";
 
   const {
@@ -51,6 +52,10 @@ function LoginForm() {
       const result = await response.json();
 
       if (!response.ok) {
+        if (result.code === "NO_PASSWORD") {
+          window.location.href = `/admin/setup-password?email=${encodeURIComponent(data.email)}`;
+          return;
+        }
         setError(result.error || "Error al iniciar sesión");
         return;
       }
@@ -97,6 +102,12 @@ function LoginForm() {
 
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {isPasswordSet && (
+              <div className="rounded-md bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-500">
+                Contraseña establecida correctamente. Ya puedes iniciar sesión.
+              </div>
+            )}
+
             {isUnauthorized && (
               <div className="rounded-md bg-amber-500/10 p-3 text-sm text-amber-600 dark:text-amber-500">
                 No tienes permisos para acceder a esta sección.
