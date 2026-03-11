@@ -43,30 +43,17 @@ function AdditionCard({
   onDelete: () => void;
 }) {
   return (
-    <Card className="overflow-hidden">
-      <div className="relative h-32">
-        {addition.image ? (
-          <img
-            src={addition.image}
-            alt={addition.name}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-muted">
-            <CirclePlus className="h-12 w-12 text-muted-foreground" />
-          </div>
-        )}
+    <Card className="border-l-4 border-l-transparent transition-all duration-200 hover:border-l-primary hover:scale-[1.02] hover:shadow-md">
+      <CardContent className="p-6">
         {!addition.isActive && (
-          <Badge variant="destructive" className="absolute left-2 top-2">
+          <Badge variant="destructive" className="mb-3">
             Inactivo
           </Badge>
         )}
-      </div>
-      <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="font-semibold">{addition.name}</h3>
-            <p className="mt-1 text-lg font-bold text-primary">
+            <h3 className="text-xl font-bold leading-tight">{addition.name}</h3>
+            <p className="mt-3 text-lg font-bold text-primary">
               {formatPrice(addition.price)}
             </p>
           </div>
@@ -143,7 +130,7 @@ export default function AdditionsPage() {
         <Skeleton className="h-16 w-full" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-48 w-full" />
+            <Skeleton key={i} className="h-32 w-full" />
           ))}
         </div>
       </div>

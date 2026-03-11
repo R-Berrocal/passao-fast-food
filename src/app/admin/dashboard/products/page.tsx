@@ -8,7 +8,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  Image as ImageIcon,
+  PackageX,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,37 +49,26 @@ function ProductCard({
   onDelete: () => void;
 }) {
   return (
-    <Card className="overflow-hidden">
-      <div className="relative h-40">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="h-full w-full object-cover"
-        />
-        <Badge className="absolute right-2 top-2 capitalize">
-          {product.category.name}
-        </Badge>
-        {!product.isActive && (
-          <Badge variant="destructive" className="absolute left-2 top-2">
-            Inactivo
-          </Badge>
-        )}
-        {!product.isAvailable && product.isActive && (
-          <Badge variant="secondary" className="absolute left-2 top-2">
-            No disponible
-          </Badge>
-        )}
-      </div>
-      <CardContent className="p-4">
+    <Card className="border-l-4 border-l-transparent transition-all duration-200 hover:border-l-primary hover:scale-[1.02] hover:shadow-md">
+      <CardContent className="p-6">
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <Badge className="capitalize">{product.category.name}</Badge>
+          {!product.isActive && (
+            <Badge variant="destructive">Inactivo</Badge>
+          )}
+          {!product.isAvailable && product.isActive && (
+            <Badge variant="secondary">No disponible</Badge>
+          )}
+        </div>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="font-semibold">{product.name}</h3>
+            <h3 className="text-xl font-bold leading-tight">{product.name}</h3>
             {product.description && (
-              <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+              <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
                 {product.description}
               </p>
             )}
-            <p className="mt-2 text-lg font-bold text-primary">
+            <p className="mt-3 text-lg font-bold text-primary">
               {formatPrice(product.price)}
             </p>
           </div>
@@ -204,7 +193,7 @@ export default function ProductsPage() {
         {isLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-64 w-full" />
+              <Skeleton key={i} className="h-40 w-full" />
             ))}
           </div>
         ) : (
@@ -220,7 +209,7 @@ export default function ProductsPage() {
             </div>
             {filteredProducts.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                <PackageX className="h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">
                   No se encontraron productos
                 </h3>
