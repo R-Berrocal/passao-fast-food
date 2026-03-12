@@ -3,6 +3,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Hero } from "@/components/layout/hero";
 import { MenuList } from "@/components/menu/menu-list";
 import { Footer } from "@/components/layout/footer";
+import { MobileCartBar } from "@/components/cart/mobile-cart-bar";
 import { getQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
 import { fetchAdditions } from "@/lib/fetch-functions/additions";
@@ -78,11 +79,12 @@ export default async function Home() {
       <HydrationBoundary state={dehydrate(queryClient)}>
         <div className="flex min-h-screen flex-col">
           <Navbar />
-          <main className="flex-1">
+          <main className="flex-1 pb-24 md:pb-0">
             <Hero />
             <MenuList />
           </main>
           <Footer />
+          <MobileCartBar />
         </div>
       </HydrationBoundary>
     </>
