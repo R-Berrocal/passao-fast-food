@@ -1,10 +1,10 @@
 "use client";
 
 import { memo, useState } from "react";
-import { Card } from "@/components/ui/card";
 import type { Addition, Product } from "@/types/models";
 import { formatPrice } from "@/stores/use-cart-store";
 import { AddToCartDialog } from "./add-to-cart-dialog";
+import { Plus } from "lucide-react";
 
 interface MenuItemProps {
   product: Product;
@@ -16,29 +16,30 @@ export const MenuItem = memo(function MenuItem({ product, additions }: MenuItemP
 
   return (
     <>
-      <Card
-        className="group cursor-pointer border-l-4 border-l-transparent transition-all duration-200 hover:border-l-primary hover:scale-[1.02] hover:shadow-md"
+      <div
+        className="group flex cursor-pointer items-center justify-between gap-4 border-b border-dashed border-border py-4 transition-all last:border-0 hover:pl-2"
         onClick={() => setDialogOpen(true)}
       >
-        <div className="p-6">
-          <h3 className="text-xl font-bold leading-tight text-foreground">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
             {product.name}
-          </h3>
+          </p>
           {product.description && (
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+            <p className="mt-0.5 text-xs leading-snug text-muted-foreground line-clamp-1">
               {product.description}
             </p>
           )}
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-lg font-bold text-primary">
-              {formatPrice(product.price)}
-            </p>
-            <span className="text-xs text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-              Toca para pedir →
-            </span>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="font-mono text-sm font-bold tabular-nums text-primary">
+            {formatPrice(product.price)}
+          </span>
+          <div className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-transparent text-muted-foreground transition-all group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
+            <Plus className="h-3 w-3" />
           </div>
         </div>
-      </Card>
+      </div>
 
       <AddToCartDialog
         product={product}

@@ -30,21 +30,22 @@ export function MenuList() {
 
   if (isLoading) {
     return (
-      <section id="menu" className="py-16">
+      <section id="menu" className="py-20">
         <div className="container mx-auto px-4">
-          <div className="mb-12 text-center">
-            <h2 className="text-3xl font-bold md:text-4xl">Nuestro Menú</h2>
-            <p className="mt-2 text-muted-foreground">
-              Descubre todos nuestros deliciosos productos
-            </p>
+          <div className="mb-16 border-b border-border pb-8">
+            <Skeleton className="mb-2 h-3 w-12" />
+            <Skeleton className="h-10 w-52" />
           </div>
           <div className="space-y-16">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="space-y-6">
-                <Skeleton className="h-10 w-32" />
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map((j) => (
-                    <Skeleton key={j} className="h-40 w-full rounded-lg" />
+              <div key={i}>
+                <div className="mb-8 border-t-2 border-dashed border-primary/30 pt-5">
+                  <Skeleton className="mb-2 h-3 w-20" />
+                  <Skeleton className="h-8 w-36" />
+                </div>
+                <div className="grid gap-x-12 sm:grid-cols-2">
+                  {[1, 2, 3, 4].map((j) => (
+                    <Skeleton key={j} className="h-14 w-full border-b border-dashed border-border" />
                   ))}
                 </div>
               </div>
@@ -56,16 +57,21 @@ export function MenuList() {
   }
 
   return (
-    <section id="menu" className="py-16">
+    <section id="menu" className="py-20">
       <div className="container mx-auto px-4">
-        <div className="mb-12 text-center">
-          <h2 className="text-3xl font-bold md:text-4xl">Nuestro Menú</h2>
-          <p className="mt-2 text-muted-foreground">
-            Descubre todos nuestros deliciosos productos
+        <div className="mb-16 flex items-end justify-between border-b border-border pb-8">
+          <div>
+            <p className="mb-1 text-xs font-bold uppercase tracking-[0.25em] text-primary">
+              Carta
+            </p>
+            <h2 className="text-4xl font-black tracking-tight md:text-5xl">Nuestro Menú</h2>
+          </div>
+          <p className="hidden text-sm text-muted-foreground md:block">
+            Toca cualquier producto para agregar al pedido
           </p>
         </div>
 
-        <div className="space-y-16">
+        <div className="space-y-20">
           {categoriesWithProducts.map((category) => (
             <MenuSection key={category.id} category={category} additions={additions} />
           ))}

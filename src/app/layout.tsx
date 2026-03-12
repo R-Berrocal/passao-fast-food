@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { fetchBusinessConfig } from "@/lib/fetch-functions/business";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,10 +16,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Passao - Comida Rápida",
-  description: "Las mejores arepas, perros, patacones y más de Montería",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await fetchBusinessConfig().catch(() => null);
+
+  return {
+    title: config?.name ? `${config.name} - Comida Rápida` : "Passao - Comida Rápida",
+    description: config?.slogan ?? "Las mejores arepas, perros, patacones y más de Montería",
+    icons: { icon: config?.logoUrl || "/images/logo.png" },
+  };
+}
 
 export default function RootLayout({
   children,

@@ -31,7 +31,7 @@ export function Hero() {
 
       <div className="relative z-10 container mx-auto px-4 py-20 md:py-32">
         <div className="flex flex-col items-center text-center">
-          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary shadow-2xl md:h-32 md:w-32 overflow-hidden">
+          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full shadow-2xl md:h-32 md:w-32 overflow-hidden">
             {logoUrl ? (
               <img
                 src={logoUrl}

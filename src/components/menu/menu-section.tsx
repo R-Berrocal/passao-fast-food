@@ -14,14 +14,23 @@ interface MenuSectionProps {
 export const MenuSection = memo(function MenuSection({ category, additions }: MenuSectionProps) {
   return (
     <section id={category.slug} className="scroll-mt-20">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-primary md:text-3xl">
+      {/* Kitchen-ticket style header */}
+      <div className="mb-8 border-t-2 border-dashed border-primary/30 pt-5">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+            {category.name}
+          </span>
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {category.products.length}{" "}
+            {category.products.length === 1 ? "producto" : "productos"}
+          </span>
+        </div>
+        <h2 className="text-2xl font-black tracking-tight text-foreground md:text-3xl">
           {category.name}
         </h2>
-        <div className="mt-2 h-1 w-20 bg-primary" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-x-12 sm:grid-cols-2">
         {category.products.map((product) => (
           <MenuItem key={product.id} product={product} additions={additions} />
         ))}
