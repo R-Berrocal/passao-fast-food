@@ -14,7 +14,7 @@ export default async function Home() {
   const queryClient = getQueryClient();
 
   // Prefetch menu data in parallel — allSettled prevents one failure from blocking the rest
-  await Promise.allSettled([
+  const [, , , configResult] = await Promise.allSettled([
     queryClient.prefetchQuery({
       queryKey: queryKeys.additions.list({ showAll: false }),
       queryFn: () => fetchAdditions(false),
@@ -37,16 +37,54 @@ export default async function Home() {
     }),
   ]);
 
+  const config = configResult.status === "fulfilled"
+    ? queryClient.getQueryData<Awaited<ReturnType<typeof fetchBusinessConfig>>>(queryKeys.business.config())
+    : null;
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://passao.com.co";
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FastFoodRestaurant",
+    name: config?.name ?? "Passao",
+    description: config?.slogan ?? "Las mejores arepas, perros, patacones y más",
+    url: baseUrl,
+    telephone: config?.phone,
+    servesCuisine: ["Colombian", "Fast Food", "Arepas", "Perros Calientes", "Patacones"],
+    priceRange: "$",
+    ...(config?.address && {
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: config.address,
+        addressLocality: config.city ?? "Montería",
+        addressRegion: "Córdoba",
+        addressCountry: "CO",
+      },
+    }),
+    ...(config?.logoUrl && {
+      image: config.logoUrl,
+    }),
+    ...(config?.instagramUrl && {
+      sameAs: [config.instagramUrl, ...(config.facebookUrl ? [config.facebookUrl] : [])],
+    }),
+  };
+
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="flex-1">
-          <Hero />
-          <MenuList />
-        </main>
-        <Footer />
-      </div>
-    </HydrationBoundary>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <div className="flex min-h-screen flex-col">
+          <Navbar />
+          <main className="flex-1">
+            <Hero />
+            <MenuList />
+          </main>
+          <Footer />
+        </div>
+      </HydrationBoundary>
+    </>
   );
 }
