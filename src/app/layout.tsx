@@ -5,7 +5,6 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { fetchBusinessConfig } from "@/lib/fetch-functions/business";
-import { getBaseUrl } from "@/lib/utils";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,22 +18,31 @@ const geistMono = Geist_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await fetchBusinessConfig().catch(() => null);
-  const baseUrl = getBaseUrl() ?? "https://passao.com.co";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://passao.com.co";
   const siteName = config?.name ?? "Passao";
-  const description = config?.slogan ?? "Las mejores arepas, perros, patacones y más de Montería";
-  const ogImage = config?.logoUrl ?? "/images/logo.png";
+  const city = config?.city ?? "Montería";
+  const slogan = config?.slogan ?? "Las mejores arepas, perros y patacones";
+
+  // OG title: 50-60 chars — "Passao Fast Food - Arepas y Más en Montería" = ~44
+  const ogTitle = `${siteName} Fast Food - Arepas, Perros y Patacones en ${city}`;
+
+  // OG description: 110-160 chars — enrich short slogans with keyword context
+  const ogDescription =
+    slogan.length >= 110
+      ? slogan
+      : `${slogan}. Pedidos a domicilio y para recoger en nuestro local de ${city}. ¡Ordena ahora y recibe en minutos!`;
 
   return {
     metadataBase: new URL(baseUrl),
     title: {
-      default: `${siteName} - Comida Rápida en ${config?.city ?? "Montería"}`,
+      default: ogTitle,
       template: `%s | ${siteName}`,
     },
-    description,
+    description: ogDescription,
     keywords: [
-      `comida rápida ${config?.city ?? "Montería"}`,
-      `arepas ${config?.city ?? "Montería"}`,
-      `domicilios ${config?.city ?? "Montería"}`,
+      `comida rápida ${city}`,
+      `arepas ${city}`,
+      `domicilios ${city}`,
       "perros calientes",
       "patacones",
       siteName,
@@ -44,15 +52,14 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       locale: "es_CO",
       siteName,
-      title: `${siteName} - Comida Rápida en ${config?.city ?? "Montería"}`,
-      description,
-      images: [{ url: ogImage, width: 800, height: 600, alt: `Logo ${siteName}` }],
+      title: ogTitle,
+      description: ogDescription,
+      // opengraph-image.tsx is picked up automatically by Next.js
     },
     twitter: {
       card: "summary_large_image",
-      title: `${siteName} - Comida Rápida`,
-      description,
-      images: [ogImage],
+      title: ogTitle,
+      description: ogDescription,
     },
   };
 }
