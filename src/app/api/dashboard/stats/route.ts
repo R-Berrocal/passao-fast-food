@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     if (!staff) return unauthorizedResponse();
 
     // Colombia is UTC-5: midnight Colombia = 05:00 UTC
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
     const todayStart = new Date(`${today}T05:00:00.000Z`);
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
