@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSupplies } from "@/hooks/use-supplies";
 import { formatPrice } from "@/stores/use-cart-store";
+import { getTodayString, formatDateLabel } from "@/lib/date-utils";
 import type { SupplyPurchase } from "@/types/models";
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -27,19 +28,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   Servicios: "bg-orange-500/10 text-orange-500 border-orange-500/20",
   Otros: "bg-gray-500/10 text-gray-400 border-gray-500/20",
 };
-
-function getTodayString() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function formatDateLabel(dateStr: string): string {
-  return new Date(dateStr + "T12:00:00").toLocaleDateString("es-CO", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 export default function SuppliesPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayString());

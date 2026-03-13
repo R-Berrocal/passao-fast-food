@@ -18,20 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDailyReport } from "@/hooks/use-reports";
 import { formatPrice } from "@/stores/use-cart-store";
-
-function getTodayString() {
-  // Use Colombia timezone (UTC-5) so the date doesn't roll over at 7 PM local time
-  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
-}
-
-function formatDateLabel(dateStr: string): string {
-  return new Date(dateStr + "T12:00:00").toLocaleDateString("es-CO", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
+import { getTodayString, formatDateLabel } from "@/lib/date-utils";
 
 const PAYMENT_LABELS: Record<string, string> = {
   cash: "Efectivo",

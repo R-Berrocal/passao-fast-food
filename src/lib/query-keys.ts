@@ -95,4 +95,10 @@ export const queryKeys = {
     all: () => ["reports"] as const,
     daily: (date: string) => [...queryKeys.reports.all(), "daily", date] as const,
   },
+
+  // Dashboard
+  dashboard: {
+    all: () => ["dashboard"] as const,
+    stats: () => [...queryKeys.dashboard.all(), "stats"] as const,
+  },
 } as const;
