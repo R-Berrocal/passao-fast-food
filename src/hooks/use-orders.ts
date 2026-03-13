@@ -11,7 +11,7 @@ import {
   createManualOrder as createManualOrderFn,
 } from "@/lib/fetch-functions/orders";
 import type { OrderStatus } from "@/types/models";
-import type { CreateOrderInput } from "@/lib/validations/order";
+import { CreateOrderInput } from "@/lib/validations";
 
 interface UseOrdersOptions {
   status?: OrderStatus;
@@ -30,7 +30,6 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.orders.list(options),
     queryFn: () => fetchOrders(options),
-    staleTime: 5 * 60 * 1000, // 5 minutes (fresher data for orders)
   });
 
   // Mutation for updating order status
@@ -74,7 +73,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof updateOrderFn>[1] }) =>
       updateOrderFn(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all(), refetchType: "all" });
     },
   });
 
@@ -103,6 +102,24 @@ export function useOrders(options: UseOrdersOptions = {}) {
     }
   };
 
+  // Mutation for creating a manual order (admin)
+  const createManualOrderMutation = useMutation({
+    mutationFn: async (data: unknown) => {
+      return createManualOrderFn(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+    },
+  });
+
+  const createManualOrder = async (data: unknown) => {
+    try {
+      return await createManualOrderMutation.mutateAsync(data);
+    } catch {
+      return null;
+    }
+  };
+
   return {
     orders,
     isLoading,
@@ -111,6 +128,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     updateOrderStatus,
     deleteOrder,
     updateOrder,
+    createManualOrder,
     clearError: () => {}, // No-op for API consistency
   };
 }
@@ -160,7 +178,7 @@ export function useCreateManualOrder() {
       return createManualOrderFn(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all(), refetchType: "all" });
     },
   });
 

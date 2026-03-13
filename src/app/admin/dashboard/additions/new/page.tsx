@@ -19,7 +19,7 @@ export default function NewAdditionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { createAddition } = useAdditions();
+  const { createAddition } = useAdditions({ showAll: true });
 
   const form = useForm<CreateAdditionInput>({
     resolver: zodResolver(createAdditionSchema),

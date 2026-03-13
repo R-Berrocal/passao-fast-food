@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/sheet";
 import { useProducts } from "@/hooks/use-products";
 import { useCategories } from "@/hooks/use-categories";
-import { useCreateManualOrder } from "@/hooks/use-orders";
+import { useOrders } from "@/hooks/use-orders";
 import { formatPrice } from "@/stores/use-cart-store";
 import type { Product } from "@/types/models";
 
@@ -311,7 +311,7 @@ export default function NewOrderPage() {
 
   const { products, isLoading: productsLoading } = useProducts();
   const { categories, isLoading: categoriesLoading } = useCategories();
-  const { createManualOrder } = useCreateManualOrder();
+  const { createManualOrder } = useOrders();
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),

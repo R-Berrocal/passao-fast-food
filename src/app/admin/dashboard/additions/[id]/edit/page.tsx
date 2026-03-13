@@ -24,7 +24,7 @@ export default function EditAdditionPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { addition, isLoading: additionLoading, error: additionError } = useAddition(additionId);
-  const { updateAddition } = useAdditions();
+  const { updateAddition } = useAdditions({ showAll: true });
 
   const form = useForm<UpdateAdditionInput>({
     resolver: zodResolver(updateAdditionSchema),
