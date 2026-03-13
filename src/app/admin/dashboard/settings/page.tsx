@@ -140,7 +140,7 @@ export default function SettingsPage() {
       )}
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+        <TabsList className="flex w-full overflow-x-auto sm:grid sm:grid-cols-5">
           <TabsTrigger value="general" className="cursor-pointer">General</TabsTrigger>
           <TabsTrigger value="contact" className="cursor-pointer">Contacto</TabsTrigger>
           <TabsTrigger value="hours" className="cursor-pointer">Horarios</TabsTrigger>
