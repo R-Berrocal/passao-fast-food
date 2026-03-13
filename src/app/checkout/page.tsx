@@ -147,7 +147,7 @@ export default function CheckoutPage() {
 
   const businessOpen = useMemo(() => isBusinessOpen(), [hours]);
   const businessStatusMessage = useMemo(() => getBusinessStatusMessage(), [hours]);
-  const finalTotal = total;
+  const finalTotal = total + (orderType === "delivery" ? config?.deliveryFee || 0 : 0);
 
   // Handle customer form submission
   const handleCustomerSubmit = useCallback(
@@ -225,7 +225,7 @@ export default function CheckoutPage() {
     lines.push(`*Total productos:* ${formatPrice(total)}`);
 
     if (orderType === "delivery") {
-      lines.push(`*Domicilio:* A convenir (te informamos el costo)`);
+      lines.push(`*Domicilio:* ${config?.deliveryFee ? formatPrice(config.deliveryFee) : "A convenir (te informamos el costo)"}`);
     }
 
     lines.push(`*TOTAL: ${formatPrice(finalTotal)}*`);
@@ -690,7 +690,7 @@ export default function CheckoutPage() {
                       {orderType === "delivery" && (
                         <div className="flex justify-between text-muted-foreground">
                           <span>Domicilio</span>
-                          <span>A convenir</span>
+                          <span>{config?.deliveryFee ? formatPrice(config.deliveryFee) : "A convenir"}</span>
                         </div>
                       )}
                     </div>
