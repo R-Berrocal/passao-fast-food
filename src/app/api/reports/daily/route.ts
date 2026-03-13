@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     // Fetch delivered orders in date range
     const orders = await prisma.order.findMany({
       where: {
-        status: "delivered",
+        status: { not: "cancelled" },
         createdAt: { gte: startUTC, lt: endUTC },
       },
       select: { total: true, paymentMethod: true },

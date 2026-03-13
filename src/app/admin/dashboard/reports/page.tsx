@@ -20,7 +20,8 @@ import { useDailyReport } from "@/hooks/use-reports";
 import { formatPrice } from "@/stores/use-cart-store";
 
 function getTodayString() {
-  return new Date().toISOString().slice(0, 10);
+  // Use Colombia timezone (UTC-5) so the date doesn't roll over at 7 PM local time
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 }
 
 function formatDateLabel(dateStr: string): string {
