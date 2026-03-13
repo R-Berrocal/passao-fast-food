@@ -21,6 +21,7 @@ import {
 import { useSupplies } from "@/hooks/use-supplies";
 import { z } from "zod";
 import { SUPPLY_CATEGORIES, type CreateSupplyInput } from "@/lib/validations/supply";
+import { getTodayString } from "@/lib/date-utils";
 
 // Form-specific schema uses z.string() for date to avoid z.coerce.date() type mismatch with useForm
 const supplyFormSchema = z.object({
@@ -31,10 +32,6 @@ const supplyFormSchema = z.object({
   notes: z.string().optional(),
 });
 type SupplyFormValues = z.infer<typeof supplyFormSchema>;
-
-function getTodayString() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export default function NewSupplyPage() {
   const router = useRouter();

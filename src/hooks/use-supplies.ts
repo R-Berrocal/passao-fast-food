@@ -25,7 +25,10 @@ export function useSupplies(date?: string) {
   const createMutation = useMutation({
     mutationFn: (data: CreateSupplyInput) => createSupplyFn(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.supplies.all() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.supplies.all(),
+        refetchType: "all",
+      });
     },
   });
 
