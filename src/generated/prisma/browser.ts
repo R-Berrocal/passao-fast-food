@@ -68,16 +68,6 @@ export type BusinessHours = Prisma.BusinessHoursModel
  */
 export type BusinessConfig = Prisma.BusinessConfigModel
 /**
- * Model DailySales
- * 
- */
-export type DailySales = Prisma.DailySalesModel
-/**
- * Model ProductSales
- * 
- */
-export type ProductSales = Prisma.ProductSalesModel
-/**
  * Model SupplyPurchase
  * 
  */

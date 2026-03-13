@@ -293,37 +293,6 @@ model BusinessConfig {
   @@map("business_config")
 }
 
-// ============================================================================
-// ANALYTICS
-// ============================================================================
-
-model DailySales {
-  id               String   @id @default(cuid())
-  date             DateTime @unique @db.Date
-  totalOrders      Int      @default(0)
-  totalRevenue     Int      @default(0)
-  deliveryOrders   Int      @default(0)
-  pickupOrders     Int      @default(0)
-  cancelledOrders  Int      @default(0)
-  averageOrderValue Int     @default(0)
-
-  @@index([date])
-  @@map("daily_sales")
-}
-
-model ProductSales {
-  id           String   @id @default(cuid())
-  productId    String
-  productName  String   // Snapshot por si el producto cambia
-  date         DateTime @db.Date
-  quantitySold Int      @default(0)
-  revenue      Int      @default(0)
-
-  @@unique([productId, date])
-  @@index([date])
-  @@index([productId])
-  @@map("product_sales")
-}
 
 model SupplyPurchase {
   id          String   @id @default(cuid())

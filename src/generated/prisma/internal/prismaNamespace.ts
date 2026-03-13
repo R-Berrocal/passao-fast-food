@@ -394,8 +394,6 @@ export const ModelName = {
   OrderItemAddition: 'OrderItemAddition',
   BusinessHours: 'BusinessHours',
   BusinessConfig: 'BusinessConfig',
-  DailySales: 'DailySales',
-  ProductSales: 'ProductSales',
   SupplyPurchase: 'SupplyPurchase'
 } as const
 
@@ -412,7 +410,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "address" | "category" | "product" | "addition" | "order" | "orderItem" | "orderItemAddition" | "businessHours" | "businessConfig" | "dailySales" | "productSales" | "supplyPurchase"
+    modelProps: "user" | "address" | "category" | "product" | "addition" | "order" | "orderItem" | "orderItemAddition" | "businessHours" | "businessConfig" | "supplyPurchase"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1156,154 +1154,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    DailySales: {
-      payload: Prisma.$DailySalesPayload<ExtArgs>
-      fields: Prisma.DailySalesFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.DailySalesFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.DailySalesFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>
-        }
-        findFirst: {
-          args: Prisma.DailySalesFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.DailySalesFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>
-        }
-        findMany: {
-          args: Prisma.DailySalesFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>[]
-        }
-        create: {
-          args: Prisma.DailySalesCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>
-        }
-        createMany: {
-          args: Prisma.DailySalesCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.DailySalesCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>[]
-        }
-        delete: {
-          args: Prisma.DailySalesDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>
-        }
-        update: {
-          args: Prisma.DailySalesUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>
-        }
-        deleteMany: {
-          args: Prisma.DailySalesDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.DailySalesUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.DailySalesUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>[]
-        }
-        upsert: {
-          args: Prisma.DailySalesUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DailySalesPayload>
-        }
-        aggregate: {
-          args: Prisma.DailySalesAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateDailySales>
-        }
-        groupBy: {
-          args: Prisma.DailySalesGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DailySalesGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.DailySalesCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DailySalesCountAggregateOutputType> | number
-        }
-      }
-    }
-    ProductSales: {
-      payload: Prisma.$ProductSalesPayload<ExtArgs>
-      fields: Prisma.ProductSalesFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.ProductSalesFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.ProductSalesFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>
-        }
-        findFirst: {
-          args: Prisma.ProductSalesFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.ProductSalesFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>
-        }
-        findMany: {
-          args: Prisma.ProductSalesFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>[]
-        }
-        create: {
-          args: Prisma.ProductSalesCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>
-        }
-        createMany: {
-          args: Prisma.ProductSalesCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.ProductSalesCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>[]
-        }
-        delete: {
-          args: Prisma.ProductSalesDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>
-        }
-        update: {
-          args: Prisma.ProductSalesUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>
-        }
-        deleteMany: {
-          args: Prisma.ProductSalesDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.ProductSalesUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.ProductSalesUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>[]
-        }
-        upsert: {
-          args: Prisma.ProductSalesUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProductSalesPayload>
-        }
-        aggregate: {
-          args: Prisma.ProductSalesAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateProductSales>
-        }
-        groupBy: {
-          args: Prisma.ProductSalesGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ProductSalesGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.ProductSalesCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ProductSalesCountAggregateOutputType> | number
-        }
-      }
-    }
     SupplyPurchase: {
       payload: Prisma.$SupplyPurchasePayload<ExtArgs>
       fields: Prisma.SupplyPurchaseFieldRefs
@@ -1585,32 +1435,6 @@ export const BusinessConfigScalarFieldEnum = {
 } as const
 
 export type BusinessConfigScalarFieldEnum = (typeof BusinessConfigScalarFieldEnum)[keyof typeof BusinessConfigScalarFieldEnum]
-
-
-export const DailySalesScalarFieldEnum = {
-  id: 'id',
-  date: 'date',
-  totalOrders: 'totalOrders',
-  totalRevenue: 'totalRevenue',
-  deliveryOrders: 'deliveryOrders',
-  pickupOrders: 'pickupOrders',
-  cancelledOrders: 'cancelledOrders',
-  averageOrderValue: 'averageOrderValue'
-} as const
-
-export type DailySalesScalarFieldEnum = (typeof DailySalesScalarFieldEnum)[keyof typeof DailySalesScalarFieldEnum]
-
-
-export const ProductSalesScalarFieldEnum = {
-  id: 'id',
-  productId: 'productId',
-  productName: 'productName',
-  date: 'date',
-  quantitySold: 'quantitySold',
-  revenue: 'revenue'
-} as const
-
-export type ProductSalesScalarFieldEnum = (typeof ProductSalesScalarFieldEnum)[keyof typeof ProductSalesScalarFieldEnum]
 
 
 export const SupplyPurchaseScalarFieldEnum = {
@@ -1922,8 +1746,6 @@ export type GlobalOmitConfig = {
   orderItemAddition?: Prisma.OrderItemAdditionOmit
   businessHours?: Prisma.BusinessHoursOmit
   businessConfig?: Prisma.BusinessConfigOmit
-  dailySales?: Prisma.DailySalesOmit
-  productSales?: Prisma.ProductSalesOmit
   supplyPurchase?: Prisma.SupplyPurchaseOmit
 }
 

@@ -215,28 +215,6 @@ export interface BusinessConfig {
   updatedAt: Date;
 }
 
-// ============================================================================
-// ANALYTICS (para reportes)
-// ============================================================================
-
-export interface DailySales {
-  id: string;
-  date: Date;
-  totalOrders: number;
-  totalRevenue: number;
-  deliveryOrders: number;
-  pickupOrders: number;
-  cancelledOrders: number;
-  averageOrderValue: number;
-}
-
-export interface ProductSales {
-  id: string;
-  productId: string;
-  date: Date;
-  quantitySold: number;
-  revenue: number;
-}
 
 // ============================================================================
 // HELPERS - Status colors and text

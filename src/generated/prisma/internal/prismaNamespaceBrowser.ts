@@ -61,8 +61,6 @@ export const ModelName = {
   OrderItemAddition: 'OrderItemAddition',
   BusinessHours: 'BusinessHours',
   BusinessConfig: 'BusinessConfig',
-  DailySales: 'DailySales',
-  ProductSales: 'ProductSales',
   SupplyPurchase: 'SupplyPurchase'
 } as const
 
@@ -250,32 +248,6 @@ export const BusinessConfigScalarFieldEnum = {
 } as const
 
 export type BusinessConfigScalarFieldEnum = (typeof BusinessConfigScalarFieldEnum)[keyof typeof BusinessConfigScalarFieldEnum]
-
-
-export const DailySalesScalarFieldEnum = {
-  id: 'id',
-  date: 'date',
-  totalOrders: 'totalOrders',
-  totalRevenue: 'totalRevenue',
-  deliveryOrders: 'deliveryOrders',
-  pickupOrders: 'pickupOrders',
-  cancelledOrders: 'cancelledOrders',
-  averageOrderValue: 'averageOrderValue'
-} as const
-
-export type DailySalesScalarFieldEnum = (typeof DailySalesScalarFieldEnum)[keyof typeof DailySalesScalarFieldEnum]
-
-
-export const ProductSalesScalarFieldEnum = {
-  id: 'id',
-  productId: 'productId',
-  productName: 'productName',
-  date: 'date',
-  quantitySold: 'quantitySold',
-  revenue: 'revenue'
-} as const
-
-export type ProductSalesScalarFieldEnum = (typeof ProductSalesScalarFieldEnum)[keyof typeof ProductSalesScalarFieldEnum]
 
 
 export const SupplyPurchaseScalarFieldEnum = {
