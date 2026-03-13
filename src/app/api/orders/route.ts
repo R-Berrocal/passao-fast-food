@@ -127,11 +127,12 @@ export async function POST(request: NextRequest) {
     }
 
     const productIds = items.map((item) => item.productId);
+    const uniqueProductIds = [...new Set(productIds)];
     const products = await prisma.product.findMany({
-      where: { id: { in: productIds }, isActive: true, isAvailable: true },
+      where: { id: { in: uniqueProductIds }, isActive: true, isAvailable: true },
     });
 
-    if (products.length !== productIds.length) {
+    if (products.length !== uniqueProductIds.length) {
       return errorResponse("Algunos productos no están disponibles");
     }
 
