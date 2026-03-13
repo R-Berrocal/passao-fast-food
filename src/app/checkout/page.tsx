@@ -250,15 +250,18 @@ export default function CheckoutPage() {
     return lines.join("\n");
   };
 
-  const openWhatsApp = (message: string) => {
+  const buildWhatsAppUrl = (message: string) => {
     const whatsappNumber = config?.whatsappNumber || "573014483308";
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-    window.open(whatsappUrl, "_blank");
+    return `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
   };
 
   const handleSubmit = async () => {
     if (!customer) return;
+
+    // Pre-open window synchronously while inside the user gesture context.
+    // Mobile browsers block window.open() called after an await.
+    const whatsappWindow = window.open("", "_blank");
 
     const orderItems = items.map((item) => ({
       productId: item.id,
@@ -279,10 +282,19 @@ export default function CheckoutPage() {
 
     if (order) {
       const whatsappMessage = buildWhatsAppMessage(order.orderNumber);
-      openWhatsApp(whatsappMessage);
+      const whatsappUrl = buildWhatsAppUrl(whatsappMessage);
+      if (whatsappWindow) {
+        whatsappWindow.location.href = whatsappUrl;
+      } else {
+        // Fallback if pre-open was also blocked (e.g. very strict browser)
+        window.location.href = whatsappUrl;
+      }
       setOrderSuccess({ orderNumber: order.orderNumber });
       clearCart();
       clearCustomer();
+    } else {
+      // Order failed — close the pre-opened blank window to avoid leaving it dangling
+      whatsappWindow?.close();
     }
   };
 
