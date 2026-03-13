@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -24,52 +24,18 @@ import {
 import { useCategories } from "@/hooks/use-categories";
 import { useProduct, useProducts } from "@/hooks/use-products";
 import { updateProductSchema, type UpdateProductInput } from "@/lib/validations/product";
+import type { Product, Category } from "@/types/models";
+
+interface ProductWithCategory extends Product {
+  category: Pick<Category, "id" | "name" | "slug">;
+}
 
 export default function EditProductPage() {
-  const router = useRouter();
   const params = useParams();
   const productId = params.id as string;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const { product, isLoading: productLoading, error: productError } = useProduct(productId);
   const { categories, isLoading: categoriesLoading } = useCategories();
-  const { updateProduct } = useProducts();
-
-  const form = useForm<UpdateProductInput>({
-    resolver: zodResolver(updateProductSchema),
-  });
-
-  useEffect(() => {
-    if (product) {
-      form.reset({
-        name: product.name,
-        description: product.description || "",
-        price: product.price,
-        image: product.image,
-        categoryId: product.categoryId,
-        isActive: product.isActive,
-        isAvailable: product.isAvailable,
-        displayOrder: product.displayOrder,
-      });
-    }
-  }, [product, form]);
-
-  const onSubmit = async (data: UpdateProductInput) => {
-    setIsSubmitting(true);
-    setError(null);
-
-    const updated = await updateProduct(productId, data);
-
-    if (updated) {
-      router.push("/admin/dashboard/products");
-    } else {
-      setError("Error al actualizar el producto");
-    }
-
-    setIsSubmitting(false);
-  };
 
   if (productLoading || categoriesLoading) {
     return (
@@ -102,6 +68,51 @@ export default function EditProductPage() {
       </div>
     );
   }
+
+  return <EditProductForm product={product} categories={categories} />;
+}
+
+function EditProductForm({
+  product,
+  categories,
+}: {
+  product: ProductWithCategory;
+  categories: Category[];
+}) {
+  const router = useRouter();
+  const { updateProduct } = useProducts();
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const form = useForm<UpdateProductInput>({
+    resolver: zodResolver(updateProductSchema),
+    defaultValues: {
+      name: product.name,
+      description: product.description || "",
+      price: product.price,
+      image: product.image,
+      categoryId: product.categoryId,
+      isActive: product.isActive,
+      isAvailable: product.isAvailable,
+      displayOrder: product.displayOrder,
+    },
+  });
+
+  const onSubmit = async (data: UpdateProductInput) => {
+    setIsSubmitting(true);
+    setError(null);
+
+    const updated = await updateProduct(product.id, data);
+
+    if (updated) {
+      router.push("/admin/dashboard/products");
+    } else {
+      setError("Error al actualizar el producto");
+    }
+
+    setIsSubmitting(false);
+  };
 
   return (
     <div className="space-y-6">
