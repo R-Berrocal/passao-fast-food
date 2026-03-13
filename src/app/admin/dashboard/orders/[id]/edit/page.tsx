@@ -6,13 +6,16 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Package, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -20,9 +23,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useOrders } from "@/hooks/use-orders";
+import { useAdditions } from "@/hooks/use-additions";
 import { fetchOrder } from "@/lib/fetch-functions/orders";
-import type { OrderWithItems } from "@/types/models";
+import { formatPrice } from "@/stores/use-cart-store";
+import { cn } from "@/lib/utils";
+import type { OrderWithItems, Addition } from "@/types/models";
 
 const editOrderSchema = z.object({
   customerName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
@@ -36,6 +49,119 @@ const editOrderSchema = z.object({
 
 type EditOrderInput = z.infer<typeof editOrderSchema>;
 
+// ============================================================================
+// AdditionsEditDialog
+// ============================================================================
+
+function AdditionsEditDialog({
+  item,
+  allAdditions,
+  additionsLoading,
+  open,
+  onOpenChange,
+  onConfirm,
+  isSaving,
+}: {
+  item: OrderWithItems["items"][number] | null;
+  allAdditions: Addition[];
+  additionsLoading: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (itemId: string, selectedIds: string[]) => void;
+  isSaving: boolean;
+}) {
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    item?.additions.map((a) => a.additionId) ?? []
+  );
+
+  if (!item) return null;
+
+  const toggleId = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Editar adiciones — {item.productName}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {additionsLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-10" />
+              ))}
+            </div>
+          ) : allAdditions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No hay adiciones disponibles</p>
+          ) : (
+            <ScrollArea className="max-h-48 overflow-y-auto">
+              <div className="space-y-2 pr-2">
+                {allAdditions.map((addition) => {
+                  const isSelected = selectedIds.includes(addition.id);
+                  return (
+                    <button
+                      key={addition.id}
+                      type="button"
+                      onClick={() => toggleId(addition.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between rounded-lg border p-3 text-sm transition-colors",
+                        isSelected ? "border-primary bg-primary/10" : "hover:bg-muted"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={cn(
+                            "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors",
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-muted-foreground"
+                          )}
+                        >
+                          {isSelected && <Check className="h-3 w-3" />}
+                        </div>
+                        <span>{addition.name}</span>
+                      </div>
+                      <span className="text-muted-foreground">+{formatPrice(addition.price)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => onConfirm(item.id, selectedIds)}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              "Guardar"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================================
+// EditOrderPage
+// ============================================================================
+
 export default function EditOrderPage() {
   const router = useRouter();
   const params = useParams();
@@ -47,7 +173,13 @@ export default function EditOrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const { updateOrder } = useOrders();
+  const [editingItem, setEditingItem] = useState<OrderWithItems["items"][number] | null>(null);
+  const [additionsDialogOpen, setAdditionsDialogOpen] = useState(false);
+  const [isSavingAdditions, setIsSavingAdditions] = useState(false);
+  const [additionsError, setAdditionsError] = useState<string | null>(null);
+
+  const { updateOrder, updateOrderItemAdditions } = useOrders();
+  const { additions: allAdditions, isLoading: additionsLoading } = useAdditions({ showAll: false });
 
   const form = useForm<EditOrderInput>({
     resolver: zodResolver(editOrderSchema),
@@ -92,6 +224,26 @@ export default function EditOrderPage() {
     }
 
     setIsSubmitting(false);
+  };
+
+  const handleSaveAdditions = async (itemId: string, selectedIds: string[]) => {
+    setIsSavingAdditions(true);
+    setAdditionsError(null);
+
+    const result = await updateOrderItemAdditions(
+      orderId,
+      itemId,
+      selectedIds.map((id) => ({ additionId: id }))
+    );
+
+    if (result) {
+      setOrder(result);
+      setAdditionsDialogOpen(false);
+    } else {
+      setAdditionsError("Error al guardar las adiciones. Intenta de nuevo.");
+    }
+
+    setIsSavingAdditions(false);
   };
 
   if (isLoading) {
@@ -310,6 +462,90 @@ export default function EditOrderPage() {
           </Card>
         </div>
       </form>
+
+      {/* Items del Pedido */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Items del Pedido
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {additionsError && (
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {additionsError}
+            </div>
+          )}
+          {order.items.map((item, index) => (
+            <div key={item.id}>
+              {index > 0 && <Separator className="mb-4" />}
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{item.productName}</p>
+                    <span className="text-sm text-muted-foreground">
+                      {item.quantity} × {formatPrice(item.unitPrice)}
+                    </span>
+                    <span className="text-sm font-bold text-primary ml-auto">
+                      {formatPrice(item.totalPrice)}
+                    </span>
+                  </div>
+                  {item.additions.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {item.additions.map((a) => (
+                        <Badge key={a.id} variant="secondary" className="text-xs">
+                          {a.additionName} +{formatPrice(a.price)}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Sin adiciones</p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingItem(item);
+                    setAdditionsDialogOpen(true);
+                  }}
+                >
+                  Editar adiciones
+                </Button>
+              </div>
+            </div>
+          ))}
+
+          <Separator />
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span>{formatPrice(order.subtotal)}</span>
+          </div>
+          {order.deliveryFee > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Domicilio</span>
+              <span>{formatPrice(order.deliveryFee)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold">
+            <span>Total</span>
+            <span className="text-primary">{formatPrice(order.total)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AdditionsEditDialog
+        key={additionsDialogOpen ? editingItem?.id ?? "new" : "closed"}
+        item={editingItem}
+        allAdditions={allAdditions}
+        additionsLoading={additionsLoading}
+        open={additionsDialogOpen}
+        onOpenChange={setAdditionsDialogOpen}
+        onConfirm={handleSaveAdditions}
+        isSaving={isSavingAdditions}
+      />
     </div>
   );
 }

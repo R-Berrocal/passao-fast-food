@@ -15,6 +15,7 @@ import {
   Trash2,
   Loader2,
   Receipt,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+
 import {
   Sheet,
   SheetContent,
@@ -31,15 +33,32 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useProducts } from "@/hooks/use-products";
 import { useCategories } from "@/hooks/use-categories";
 import { useOrders } from "@/hooks/use-orders";
+import { useAdditions } from "@/hooks/use-additions";
 import { formatPrice } from "@/stores/use-cart-store";
-import type { Product } from "@/types/models";
+import { cn } from "@/lib/utils";
+import type { Product, Addition } from "@/types/models";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface CartItemAddition {
+  id: string;
+  name: string;
+  price: number;
+}
 
 interface CartItem {
   product: Product;
   quantity: number;
+  additions: CartItemAddition[];
 }
 
 const checkoutSchema = z.object({
@@ -51,6 +70,156 @@ const checkoutSchema = z.object({
 });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
+
+// ============================================================================
+// AddProductDialog
+// ============================================================================
+
+function AddProductDialog({
+  product,
+  additions,
+  additionsLoading,
+  existingCartItem,
+  open,
+  onOpenChange,
+  onConfirm,
+}: {
+  product: Product | null;
+  additions: Addition[];
+  additionsLoading: boolean;
+  existingCartItem?: CartItem;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (product: Product, additions: CartItemAddition[], quantity: number) => void;
+}) {
+  const [selectedAdditions, setSelectedAdditions] = useState<CartItemAddition[]>(
+    existingCartItem?.additions ?? []
+  );
+  const [quantity, setQuantity] = useState(existingCartItem?.quantity ?? 1);
+
+  if (!product) return null;
+
+  const toggleAddition = (addition: Addition) => {
+    setSelectedAdditions((prev) => {
+      const exists = prev.find((a) => a.id === addition.id);
+      if (exists) return prev.filter((a) => a.id !== addition.id);
+      return [...prev, { id: addition.id, name: addition.name, price: addition.price }];
+    });
+  };
+
+  const additionsTotal = selectedAdditions.reduce((sum, a) => sum + a.price, 0);
+  const unitTotal = product.price + additionsTotal;
+
+  const handleConfirm = () => {
+    onConfirm(product, selectedAdditions, quantity);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{product.name}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Quantity selector */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Cantidad</span>
+            <div className="flex items-center gap-3">
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-8 w-8"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <span className="w-8 text-center font-bold">{quantity}</span>
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-8 w-8"
+                onClick={() => setQuantity((q) => q + 1)}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Additions */}
+          <div>
+            <p className="text-sm font-medium mb-2">Adiciones</p>
+            {additionsLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10" />
+                ))}
+              </div>
+            ) : additions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No hay adiciones disponibles</p>
+            ) : (
+              <ScrollArea className="max-h-48 overflow-y-auto">
+                <div className="space-y-2 pr-2">
+                  {additions.map((addition) => {
+                    const isSelected = selectedAdditions.some((a) => a.id === addition.id);
+                    return (
+                      <button
+                        key={addition.id}
+                        type="button"
+                        onClick={() => toggleAddition(addition)}
+                        className={cn(
+                          "w-full flex items-center justify-between rounded-lg border p-3 text-sm transition-colors",
+                          isSelected
+                            ? "border-primary bg-primary/10"
+                            : "hover:bg-muted"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={cn(
+                              "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors",
+                              isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-muted-foreground"
+                            )}
+                          >
+                            {isSelected && <Check className="h-3 w-3" />}
+                          </div>
+                          <span>{addition.name}</span>
+                        </div>
+                        <span className="text-muted-foreground">+{formatPrice(addition.price)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+
+          {/* Price summary */}
+          <div className="rounded-md bg-muted p-3 flex justify-between text-sm">
+            <span className="text-muted-foreground">Total ({quantity} × {formatPrice(unitTotal)})</span>
+            <span className="font-bold">{formatPrice(unitTotal * quantity)}</span>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirm}>
+            {existingCartItem ? "Actualizar" : "Agregar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================================
+// ProductCard
+// ============================================================================
 
 function ProductCard({
   product,
@@ -99,6 +268,10 @@ function ProductCard({
   );
 }
 
+// ============================================================================
+// CartContent
+// ============================================================================
+
 function CartContent({
   cart,
   subtotal,
@@ -131,44 +304,53 @@ function CartContent({
             <p className="text-sm text-muted-foreground">Agrega productos al carrito</p>
           </div>
         ) : (
-          cart.map(({ product, quantity }) => (
-            <div key={product.id} className="flex items-center gap-2 rounded-lg border p-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium line-clamp-1">{product.name}</p>
-                <p className="text-xs text-muted-foreground">{formatPrice(product.price)} c/u</p>
+          cart.map(({ product, quantity, additions }) => {
+            const additionsTotal = additions.reduce((s, a) => s + a.price, 0);
+            const itemTotal = (product.price + additionsTotal) * quantity;
+            return (
+              <div key={product.id} className="flex items-start gap-2 rounded-lg border p-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium line-clamp-1">{product.name}</p>
+                  {additions.length > 0 && (
+                    <p className="text-xs text-muted-foreground line-clamp-1">
+                      + {additions.map((a) => a.name).join(", ")}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">{formatPrice(product.price + additionsTotal)} c/u</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={() => onDecrement(product.id)}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="w-5 text-center text-sm font-bold">{quantity}</span>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={() => onIncrement(product.id)}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 text-destructive"
+                    onClick={() => onRemove(product.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+                <p className="text-sm font-bold w-16 text-right shrink-0">
+                  {formatPrice(itemTotal)}
+                </p>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6"
-                  onClick={() => onDecrement(product.id)}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <span className="w-5 text-center text-sm font-bold">{quantity}</span>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6"
-                  onClick={() => onIncrement(product.id)}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 text-destructive"
-                  onClick={() => onRemove(product.id)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-              <p className="text-sm font-bold w-16 text-right shrink-0">
-                {formatPrice(product.price * quantity)}
-              </p>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -301,6 +483,10 @@ function CartContent({
   );
 }
 
+// ============================================================================
+// NewOrderPage
+// ============================================================================
+
 export default function NewOrderPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -308,10 +494,13 @@ export default function NewOrderPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [dialogProduct, setDialogProduct] = useState<Product | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const { products, isLoading: productsLoading } = useProducts();
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { createManualOrder } = useOrders();
+  const { additions, isLoading: additionsLoading } = useAdditions({ showAll: false });
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -330,17 +519,33 @@ export default function NewOrderPage() {
     });
   }, [products, searchQuery, activeCategory]);
 
-  const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => {
+    const additionsTotal = item.additions.reduce((s, a) => s + a.price, 0);
+    return sum + (item.product.price + additionsTotal) * item.quantity;
+  }, 0);
+
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const addToCart = (product: Product) => {
+  const openAddDialog = (product: Product) => {
+    setDialogProduct(product);
+    setDialogOpen(true);
+  };
+
+  const handleDialogConfirm = (
+    product: Product,
+    selectedAdditions: CartItemAddition[],
+    quantity: number
+  ) => {
     setCart((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
-      if (existing)
+      const exists = prev.find((i) => i.product.id === product.id);
+      if (exists) {
         return prev.map((i) =>
-          i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.product.id === product.id
+            ? { ...i, quantity, additions: selectedAdditions }
+            : i
         );
-      return [...prev, { product, quantity: 1 }];
+      }
+      return [...prev, { product, quantity, additions: selectedAdditions }];
     });
   };
 
@@ -391,7 +596,7 @@ export default function NewOrderPage() {
       items: cart.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,
-        additions: [],
+        additions: item.additions.map((a) => ({ additionId: a.id })),
       })),
     };
 
@@ -471,8 +676,8 @@ export default function NewOrderPage() {
                     key={product.id}
                     product={product}
                     cartItem={cart.find((i) => i.product.id === product.id)}
-                    onAdd={() => addToCart(product)}
-                    onIncrement={() => incrementItem(product.id)}
+                    onAdd={() => openAddDialog(product)}
+                    onIncrement={() => openAddDialog(product)}
                     onDecrement={() => decrementItem(product.id)}
                   />
                 ))}
@@ -540,6 +745,20 @@ export default function NewOrderPage() {
           </Sheet>
         </div>
       )}
+
+      {/* Add product dialog */}
+      <AddProductDialog
+        key={dialogOpen ? dialogProduct?.id ?? "new" : "closed"}
+        product={dialogProduct}
+        existingCartItem={
+          dialogProduct ? cart.find((i) => i.product.id === dialogProduct.id) : undefined
+        }
+        additions={additions}
+        additionsLoading={additionsLoading}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onConfirm={handleDialogConfirm}
+      />
     </div>
   );
 }

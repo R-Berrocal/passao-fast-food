@@ -185,6 +185,7 @@ Use `@/*` to import from `src/*` (configured in tsconfig.json).
 - para crear hooks de datos, seguir el patrón de TanStack Query con optimistic updates
 - para páginas admin, usar el patrón client-only (sin SSR prefetch) para mejor caching
 - para páginas públicas (landing, menú), usar SSR prefetch con `HydrationBoundary`
+- no usar `useEffect` para resetear estado cuando cambian props (React 19 lo prohíbe por cascading renders). En su lugar, usar el patrón `key` para forzar remount del componente, o inicializar estado desde props directamente. Ver: https://react.dev/learn/you-might-not-need-an-effect#resetting-all-state-when-a-prop-changes
 - cuando ejecutes el comando npm run db:push debes cambiar la variable de entorno en la conexion de prisma por DIRECT_URL en el archivo prisma.config.ts
 ```
 import "dotenv/config";

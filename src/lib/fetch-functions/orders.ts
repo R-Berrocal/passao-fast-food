@@ -138,6 +138,32 @@ export async function updateOrder(
   return result.data;
 }
 
+export async function updateOrderItemAdditions(
+  orderId: string,
+  itemId: string,
+  additions: { additionId: string }[]
+): Promise<OrderWithItems> {
+  const response = await fetch(
+    `${getBaseUrl()}/api/orders/${orderId}/items/${itemId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify({ additions }),
+    }
+  );
+
+  const result: ApiResponse<OrderWithItems> = await response.json();
+
+  if (!result.success || !result.data) {
+    throw new Error(result.error || "Error al actualizar adiciones del item");
+  }
+
+  return result.data;
+}
+
 export async function createManualOrder(data: unknown): Promise<Order> {
   const response = await fetch(`${getBaseUrl()}/api/admin/orders`, {
     method: "POST",

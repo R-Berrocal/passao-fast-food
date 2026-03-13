@@ -9,8 +9,9 @@ import {
   updateOrder as updateOrderFn,
   createOrder as createOrderFn,
   createManualOrder as createManualOrderFn,
+  updateOrderItemAdditions as updateOrderItemAdditionsFn,
 } from "@/lib/fetch-functions/orders";
-import type { OrderStatus } from "@/types/models";
+import type { OrderStatus, OrderWithItems } from "@/types/models";
 import { CreateOrderInput } from "@/lib/validations";
 
 interface UseOrdersOptions {
@@ -120,6 +121,37 @@ export function useOrders(options: UseOrdersOptions = {}) {
     }
   };
 
+  // Mutation for updating order item additions
+  const updateOrderItemAdditionsMutation = useMutation({
+    mutationFn: async ({
+      orderId,
+      itemId,
+      additions,
+    }: {
+      orderId: string;
+      itemId: string;
+      additions: { additionId: string }[];
+    }) => {
+      return updateOrderItemAdditionsFn(orderId, itemId, additions);
+    },
+    onSuccess: (_data, { orderId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.lists() });
+    },
+  });
+
+  const updateOrderItemAdditions = async (
+    orderId: string,
+    itemId: string,
+    additions: { additionId: string }[]
+  ): Promise<OrderWithItems | null> => {
+    try {
+      return await updateOrderItemAdditionsMutation.mutateAsync({ orderId, itemId, additions });
+    } catch {
+      return null;
+    }
+  };
+
   return {
     orders,
     isLoading,
@@ -129,6 +161,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     deleteOrder,
     updateOrder,
     createManualOrder,
+    updateOrderItemAdditions,
     clearError: () => {}, // No-op for API consistency
   };
 }
