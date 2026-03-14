@@ -61,13 +61,39 @@ interface CartItem {
   additions: CartItemAddition[];
 }
 
-const checkoutSchema = z.object({
-  paymentMethod: z.enum(["cash", "nequi", "daviplata", "transfer"]),
-  orderType: z.enum(["pickup", "delivery"]),
-  customerName: z.string().optional(),
-  customerPhone: z.string().optional(),
-  deliveryAddress: z.string().optional(),
-});
+const checkoutSchema = z
+  .object({
+    paymentMethod: z.enum(["cash", "nequi", "daviplata", "transfer"]),
+    orderType: z.enum(["pickup", "delivery"]),
+    customerName: z.string().optional(),
+    customerPhone: z.string().optional(),
+    deliveryAddress: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.orderType === "delivery") {
+      if (!data.customerName || data.customerName.trim().length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "El nombre es requerido (mín. 2 caracteres)",
+          path: ["customerName"],
+        });
+      }
+      if (!data.customerPhone || !/^3\d{9}$/.test(data.customerPhone.trim())) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Teléfono inválido (10 dígitos, ej: 3001234567)",
+          path: ["customerPhone"],
+        });
+      }
+      if (!data.deliveryAddress || data.deliveryAddress.trim().length < 5) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "La dirección es requerida (mín. 5 caracteres)",
+          path: ["deliveryAddress"],
+        });
+      }
+    }
+  });
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
@@ -277,6 +303,7 @@ function CartContent({
   subtotal,
   form,
   isSubmitting,
+  submitError,
   onIncrement,
   onDecrement,
   onRemove,
@@ -286,6 +313,7 @@ function CartContent({
   subtotal: number;
   form: ReturnType<typeof useForm<CheckoutFormData>>;
   isSubmitting: boolean;
+  submitError: string | null;
   onIncrement: (productId: string) => void;
   onDecrement: (productId: string) => void;
   onRemove: (productId: string) => void;
@@ -293,6 +321,7 @@ function CartContent({
 }) {
   const orderType = form.watch("orderType");
   const paymentMethod = form.watch("paymentMethod");
+  const { errors } = form.formState;
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -392,8 +421,12 @@ function CartContent({
                   id="customerName"
                   placeholder="Nombre completo"
                   {...form.register("customerName")}
+                  aria-invalid={!!errors.customerName}
                   className="h-8 text-sm"
                 />
+                {errors.customerName && (
+                  <p className="text-xs text-destructive">{errors.customerName.message}</p>
+                )}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="customerPhone" className="text-xs">
@@ -403,8 +436,12 @@ function CartContent({
                   id="customerPhone"
                   placeholder="3001234567"
                   {...form.register("customerPhone")}
+                  aria-invalid={!!errors.customerPhone}
                   className="h-8 text-sm"
                 />
+                {errors.customerPhone && (
+                  <p className="text-xs text-destructive">{errors.customerPhone.message}</p>
+                )}
               </div>
               <div className="space-y-1">
                 <Label htmlFor="deliveryAddress" className="text-xs">
@@ -414,8 +451,12 @@ function CartContent({
                   id="deliveryAddress"
                   placeholder="Calle 45 #23-12"
                   {...form.register("deliveryAddress")}
+                  aria-invalid={!!errors.deliveryAddress}
                   className="h-8 text-sm"
                 />
+                {errors.deliveryAddress && (
+                  <p className="text-xs text-destructive">{errors.deliveryAddress.message}</p>
+                )}
               </div>
             </div>
           )}
@@ -458,6 +499,12 @@ function CartContent({
             <span className="text-primary">{formatPrice(subtotal)}</span>
           </div>
 
+          {submitError && (
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              {submitError}
+            </div>
+          )}
+
           {/* Submit */}
           <Button
             onClick={onSubmit}
@@ -493,6 +540,7 @@ export default function NewOrderPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [dialogProduct, setDialogProduct] = useState<Product | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -572,24 +620,16 @@ export default function NewOrderPage() {
     setCart((prev) => prev.filter((i) => i.product.id !== productId));
   };
 
-  const handleSubmit = async () => {
-    const values = form.getValues();
-
-    if (values.orderType === "delivery") {
-      if (!values.customerName || !values.customerPhone || !values.deliveryAddress) {
-        form.setError("customerName", { message: "Completa los datos del cliente" });
-        return;
-      }
-    }
-
+  const onValidSubmit = async (values: CheckoutFormData) => {
     setIsSubmitting(true);
+    setSubmitError(null);
 
     const isDelivery = values.orderType === "delivery";
     const orderData = {
-      customerName: isDelivery ? values.customerName! : "Mostrador",
-      customerPhone: isDelivery ? values.customerPhone! : "0000000000",
+      customerName: isDelivery ? values.customerName!.trim() : "Mostrador",
+      customerPhone: isDelivery ? values.customerPhone!.trim() : "0000000000",
       type: isDelivery ? "delivery" : "pickup",
-      deliveryAddress: isDelivery ? values.deliveryAddress : undefined,
+      deliveryAddress: isDelivery ? values.deliveryAddress!.trim() : undefined,
       paymentMethod: values.paymentMethod,
       status: "delivered",
       paymentStatus: "confirmed",
@@ -600,13 +640,23 @@ export default function NewOrderPage() {
       })),
     };
 
-    const result = await createManualOrder(orderData);
-    setIsSubmitting(false);
-
-    if (result) {
-      router.push("/admin/dashboard/orders");
+    try {
+      const result = await createManualOrder(orderData);
+      if (result) {
+        router.push("/admin/dashboard/orders");
+      } else {
+        setSubmitError("Error al crear la orden. Intenta de nuevo.");
+      }
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : "Error al crear la orden. Intenta de nuevo."
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  const handleSubmit = form.handleSubmit(onValidSubmit);
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
@@ -702,6 +752,7 @@ export default function NewOrderPage() {
                 subtotal={subtotal}
                 form={form}
                 isSubmitting={isSubmitting}
+                submitError={submitError}
                 onIncrement={incrementItem}
                 onDecrement={decrementItem}
                 onRemove={removeItem}
@@ -732,12 +783,15 @@ export default function NewOrderPage() {
                   subtotal={subtotal}
                   form={form}
                   isSubmitting={isSubmitting}
+                  submitError={submitError}
                   onIncrement={incrementItem}
                   onDecrement={decrementItem}
                   onRemove={removeItem}
                   onSubmit={() => {
-                    handleSubmit();
-                    setIsCartOpen(false);
+                    form.handleSubmit(async (values) => {
+                      await onValidSubmit(values);
+                      setIsCartOpen(false);
+                    })();
                   }}
                 />
               </div>
