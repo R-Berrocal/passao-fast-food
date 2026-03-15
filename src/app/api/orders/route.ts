@@ -11,6 +11,7 @@ import {
   serverErrorResponse,
   errorResponse,
 } from "@/lib/api-response";
+import { getColombiaDateRange } from "@/lib/date-utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,13 +29,8 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
     if (type) where.type = type;
     if (date) {
-      const startDate = new Date(date);
-      const endDate = new Date(date);
-      endDate.setDate(endDate.getDate() + 1);
-      where.createdAt = {
-        gte: startDate,
-        lt: endDate,
-      };
+      const { startUTC, endUTC } = getColombiaDateRange(date);
+      where.createdAt = { gte: startUTC, lt: endUTC };
     }
 
     const orders = await prisma.order.findMany({

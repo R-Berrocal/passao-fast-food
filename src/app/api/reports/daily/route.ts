@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/auth";
 import { successResponse, unauthorizedResponse, serverErrorResponse } from "@/lib/api-response";
+import { getColombiaDateRange } from "@/lib/date-utils";
 import type { DailyReport } from "@/types/models";
 
 export async function GET(request: NextRequest) {
@@ -12,9 +13,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date") || new Date().toISOString().slice(0, 10);
 
-    // Colombia is UTC-5: midnight Colombia = 05:00 UTC
-    const startUTC = new Date(`${dateParam}T05:00:00.000Z`);
-    const endUTC = new Date(startUTC.getTime() + 24 * 60 * 60 * 1000);
+    const { startUTC, endUTC } = getColombiaDateRange(dateParam);
 
     // Fetch delivered orders in date range
     const orders = await prisma.order.findMany({

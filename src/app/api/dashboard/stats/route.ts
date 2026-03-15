@@ -6,16 +6,14 @@ import {
   unauthorizedResponse,
   serverErrorResponse,
 } from "@/lib/api-response";
+import { getTodayString, getColombiaDateRange } from "@/lib/date-utils";
 
 export async function GET(request: NextRequest) {
   try {
     const staff = await requireStaff(request);
     if (!staff) return unauthorizedResponse();
 
-    // Colombia is UTC-5: midnight Colombia = 05:00 UTC
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
-    const todayStart = new Date(`${today}T05:00:00.000Z`);
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const { startUTC: todayStart, endUTC: todayEnd } = getColombiaDateRange(getTodayString());
 
     const [todayOrders, pendingCount, preparingCount, recentOrders, activeProductsCount, customerCount] =
       await Promise.all([

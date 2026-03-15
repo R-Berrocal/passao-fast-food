@@ -20,6 +20,8 @@ import {
   Trash2,
   Loader2,
   CreditCard,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOrders } from "@/hooks/use-orders";
+import { getTodayString, formatDateLabel } from "@/lib/date-utils";
 import { formatPrice } from "@/stores/use-cart-store";
 import { ORDER_STATUS_CONFIG, PAYMENT_METHOD_CONFIG, type OrderStatus, type OrderWithItems } from "@/types/models";
 
@@ -244,8 +247,17 @@ export default function OrdersPage() {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<OrderWithItems | null>(null);
+  const [selectedDate, setSelectedDate] = useState(getTodayString());
 
-  const { orders, isLoading, updateOrderStatus, deleteOrder } = useOrders();
+  const navigateDate = (direction: -1 | 1) => {
+    const date = new Date(selectedDate + "T12:00:00");
+    date.setDate(date.getDate() + direction);
+    setSelectedDate(date.toISOString().slice(0, 10));
+  };
+
+  const isToday = selectedDate === getTodayString();
+
+  const { orders, isLoading, updateOrderStatus, deleteOrder } = useOrders({ date: selectedDate });
 
   const orderStats = {
     pending: orders.filter((o) => o.status === "pending").length,
@@ -316,12 +328,35 @@ export default function OrdersPage() {
             Administra y procesa los pedidos de tus clientes
           </p>
         </div>
-        <Button asChild>
-          <Link href="/admin/dashboard/orders/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Venta
-          </Link>
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => navigateDate(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-center min-w-[120px]">
+              <p className="font-semibold capitalize text-sm">{formatDateLabel(selectedDate)}</p>
+              {isToday && (
+                <Badge variant="secondary" className="mt-0.5 text-xs">
+                  Hoy
+                </Badge>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigateDate(1)}
+              disabled={isToday}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button asChild>
+            <Link href="/admin/dashboard/orders/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Nueva Venta
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
