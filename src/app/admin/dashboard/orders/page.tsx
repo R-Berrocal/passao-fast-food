@@ -19,6 +19,7 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +46,7 @@ import {
 } from "@/components/ui/select";
 import { useOrders } from "@/hooks/use-orders";
 import { formatPrice } from "@/stores/use-cart-store";
-import { ORDER_STATUS_CONFIG, type OrderStatus, type OrderWithItems } from "@/types/models";
+import { ORDER_STATUS_CONFIG, PAYMENT_METHOD_CONFIG, type OrderStatus, type OrderWithItems } from "@/types/models";
 
 function StatusIcon({ status }: { status: OrderStatus }) {
   switch (status) {
@@ -123,6 +124,10 @@ function OrderCard({
           <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
             <Phone className="h-4 w-4" />
             <span>{order.customerPhone}</span>
+          </div>
+          <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+            <CreditCard className="h-4 w-4" />
+            <span>{PAYMENT_METHOD_CONFIG[order.paymentMethod].text}</span>
           </div>
           {order.deliveryAddress && (
             <div className="mt-1 flex items-start gap-2 text-sm text-muted-foreground">
@@ -481,6 +486,12 @@ export default function OrdersPage() {
                       {selectedOrder.type === "delivery"
                         ? "Domicilio"
                         : "Recoger en tienda"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="outline">
+                      {PAYMENT_METHOD_CONFIG[selectedOrder.paymentMethod].text}
                     </Badge>
                   </div>
                 </CardContent>

@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { getTodayString } from "./date-utils";
 
 export async function generateOrderNumber(): Promise<string> {
-  const today = new Date();
-  const datePrefix = today.toISOString().slice(0, 10).replace(/-/g, "");
+  const today = getTodayString();
+  const datePrefix = today.replace(/-/g, "");
 
   const lastOrder = await prisma.order.findFirst({
     where: { orderNumber: { startsWith: `ORD-${datePrefix}` } },
