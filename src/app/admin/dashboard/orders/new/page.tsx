@@ -16,6 +16,8 @@ import {
   Loader2,
   Receipt,
   Check,
+  ChevronDown,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +70,7 @@ const checkoutSchema = z
     customerName: z.string().optional(),
     customerPhone: z.string().optional(),
     deliveryAddress: z.string().optional(),
+    adminNotes: z.string().max(300, "La nota no puede superar los 300 caracteres").optional(),
   })
   .superRefine((data, ctx) => {
     if (data.orderType === "delivery") {
@@ -319,8 +322,10 @@ function CartContent({
   onRemove: (productId: string) => void;
   onSubmit: () => void;
 }) {
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const orderType = form.watch("orderType");
   const paymentMethod = form.watch("paymentMethod");
+  const adminNotes = form.watch("adminNotes") ?? "";
   const { errors } = form.formState;
 
   return (
@@ -387,6 +392,55 @@ function CartContent({
         <>
           <Separator />
 
+          {/* Admin Notes */}
+          <div className="rounded-lg border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsNotesOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <MessageSquare className="h-3.5 w-3.5" />
+                {adminNotes.trim() ? "Nota especial" : "Agregar nota especial"}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                  isNotesOpen && "rotate-180"
+                )}
+              />
+            </button>
+            {isNotesOpen && (
+              <div className="px-3 pb-3 pt-1 border-t space-y-1.5">
+                <textarea
+                  {...form.register("adminNotes")}
+                  placeholder="ej: sin salsa, sin cebolla, extra picante..."
+                  rows={3}
+                  maxLength={300}
+                  className={cn(
+                    "w-full resize-none rounded-md border bg-transparent px-3 py-2 text-sm",
+                    "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    "transition-colors",
+                    errors.adminNotes && "border-destructive focus-visible:ring-destructive"
+                  )}
+                />
+                <div className="flex items-center justify-between">
+                  {errors.adminNotes ? (
+                    <p className="text-xs text-destructive">{errors.adminNotes.message}</p>
+                  ) : (
+                    <span />
+                  )}
+                  <span className={cn(
+                    "text-xs tabular-nums",
+                    adminNotes.length > 270 ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    {adminNotes.length} / 300
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          
           {/* Order Type */}
           <div className="space-y-2">
             <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -630,8 +684,9 @@ export default function NewOrderPage() {
       customerPhone: isDelivery ? values.customerPhone!.trim() : "0000000000",
       type: isDelivery ? "delivery" : "pickup",
       deliveryAddress: isDelivery ? values.deliveryAddress!.trim() : undefined,
+      adminNotes: values.adminNotes?.trim() || undefined,
       paymentMethod: values.paymentMethod,
-      status: "delivered",
+      status: "pending",
       paymentStatus: "confirmed",
       items: cart.map((item) => ({
         productId: item.product.id,

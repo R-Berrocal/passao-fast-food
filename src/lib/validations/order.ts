@@ -18,6 +18,7 @@ export const createOrderSchema = z.object({
   deliveryAddress: z.string().optional(),
   addressId: z.string().optional(), // ID de dirección guardada
   notes: z.string().optional(),
+  adminNotes: z.string().max(300, "La nota no puede superar los 300 caracteres").optional(),
   paymentMethod: z.enum(["cash", "nequi", "daviplata", "transfer"]),
   paymentReference: z.string().optional(),
   items: z.array(orderItemSchema).min(1, "Debe agregar al menos un producto"),
