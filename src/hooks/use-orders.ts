@@ -31,6 +31,9 @@ export function useOrders(options: UseOrdersOptions = {}) {
   const { data: orders = [], isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.orders.list(options),
     queryFn: () => fetchOrders(options),
+    staleTime: 60 * 1000, // 1 minute
+    refetchInterval: 1 * 60 * 1000, // 1 minute
+    refetchIntervalInBackground: false, // Don't refetch when tab is inactive
   });
 
   // Mutation for updating order status
@@ -109,7 +112,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
       return createManualOrderFn(data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all(), refetchType: "all" });
     },
   });
 
