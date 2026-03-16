@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     }
 
     const body = await request.json();
-    const { customerName, customerPhone, customerEmail, deliveryAddress, notes, adminNotes, paymentMethod } = body;
+    const { customerName, customerPhone, customerEmail, deliveryAddress, notes, adminNotes, paymentMethod, paymentStatus } = body;
 
     const updated = await prisma.order.update({
       where: { id },
@@ -87,6 +87,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         ...(notes !== undefined && { notes }),
         ...(adminNotes !== undefined && { adminNotes }),
         ...(paymentMethod !== undefined && { paymentMethod }),
+        ...(paymentStatus !== undefined && { paymentStatus }),
       },
       include: {
         items: { include: { additions: true } },

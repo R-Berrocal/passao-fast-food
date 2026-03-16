@@ -48,10 +48,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useOrders } from "@/hooks/use-orders";
 import { getTodayString, formatDateLabel } from "@/lib/date-utils";
 import { formatPrice } from "@/stores/use-cart-store";
-import { ORDER_STATUS_CONFIG, PAYMENT_METHOD_CONFIG, type OrderStatus, type OrderWithItems } from "@/types/models";
+import { ORDER_STATUS_CONFIG, PAYMENT_METHOD_CONFIG, PAYMENT_STATUS_CONFIG, type OrderStatus, type PaymentStatus, type OrderWithItems } from "@/types/models";
 
 function StatusIcon({ status }: { status: OrderStatus }) {
   switch (status) {
@@ -76,7 +82,9 @@ function OrderCard({
   onEdit,
   onDelete,
   onStatusChange,
+  onPaymentStatusChange,
   isUpdating,
+  isUpdatingPayment,
   isDeleting,
 }: {
   order: OrderWithItems;
@@ -84,10 +92,14 @@ function OrderCard({
   onEdit: () => void;
   onDelete: () => void;
   onStatusChange: (status: OrderStatus) => void;
+  onPaymentStatusChange: (status: PaymentStatus) => void;
   isUpdating: boolean;
+  isUpdatingPayment: boolean;
   isDeleting: boolean;
 }) {
   const statusConfig = ORDER_STATUS_CONFIG[order.status];
+  const paymentStatusConfig = PAYMENT_STATUS_CONFIG[order.paymentStatus];
+  const isActiveOrder = order.status !== "delivered" && order.status !== "cancelled";
 
   return (
     <Card className="overflow-hidden">
@@ -130,9 +142,45 @@ function OrderCard({
             <Phone className="h-4 w-4" />
             <span>{order.customerPhone}</span>
           </div>
-          <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-            <CreditCard className="h-4 w-4" />
-            <span>{PAYMENT_METHOD_CONFIG[order.paymentMethod].text}</span>
+          <div className="mt-1 flex items-center justify-between gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4 shrink-0" />
+              <span>{PAYMENT_METHOD_CONFIG[order.paymentMethod].text}</span>
+            </div>
+            {isActiveOrder ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild disabled={isUpdatingPayment}>
+                  <button
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50 ${paymentStatusConfig.color}`}
+                  >
+                    {isUpdatingPayment ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : null}
+                    {paymentStatusConfig.text}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[140px]">
+                  {(Object.entries(PAYMENT_STATUS_CONFIG) as [PaymentStatus, { color: string; text: string }][]).map(
+                    ([value, config]) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() => onPaymentStatusChange(value)}
+                        className="gap-2"
+                      >
+                        <span className={`h-2 w-2 rounded-full ${config.color}`} />
+                        {config.text}
+                      </DropdownMenuItem>
+                    )
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white ${paymentStatusConfig.color}`}
+              >
+                {paymentStatusConfig.text}
+              </span>
+            )}
           </div>
           {order.deliveryAddress && (
             <div className="mt-1 flex items-start gap-2 text-sm text-muted-foreground">
@@ -268,6 +316,7 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [updatingPaymentOrderId, setUpdatingPaymentOrderId] = useState<string | null>(null);
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<OrderWithItems | null>(null);
   const [selectedDate, setSelectedDate] = useState(getTodayString());
@@ -280,7 +329,7 @@ export default function OrdersPage() {
 
   const isToday = selectedDate === getTodayString();
 
-  const { orders, isLoading, updateOrderStatus, deleteOrder } = useOrders({ date: selectedDate });
+  const { orders, isLoading, updateOrderStatus, updatePaymentStatus, deleteOrder } = useOrders({ date: selectedDate });
 
   const orderStats = {
     pending: orders.filter((o) => o.status === "pending").length,
@@ -307,6 +356,12 @@ export default function OrdersPage() {
     setUpdatingOrderId(orderId);
     await updateOrderStatus(orderId, status);
     setUpdatingOrderId(null);
+  };
+
+  const handlePaymentStatusChange = async (orderId: string, status: PaymentStatus) => {
+    setUpdatingPaymentOrderId(orderId);
+    await updatePaymentStatus(orderId, status);
+    setUpdatingPaymentOrderId(null);
   };
 
   const handleDeleteConfirm = async () => {
@@ -477,7 +532,9 @@ export default function OrdersPage() {
               onEdit={() => router.push(`/admin/dashboard/orders/${order.id}/edit`)}
               onDelete={() => setOrderToDelete(order)}
               onStatusChange={(status) => handleStatusChange(order.id, status)}
+              onPaymentStatusChange={(status) => handlePaymentStatusChange(order.id, status)}
               isUpdating={updatingOrderId === order.id}
+              isUpdatingPayment={updatingPaymentOrderId === order.id}
               isDeleting={deletingOrderId === order.id}
             />
           ))}

@@ -687,7 +687,7 @@ export default function NewOrderPage() {
       adminNotes: values.adminNotes?.trim() || undefined,
       paymentMethod: values.paymentMethod,
       status: "pending",
-      paymentStatus: "confirmed",
+      paymentStatus: "pending",
       items: cart.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,

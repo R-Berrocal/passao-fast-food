@@ -118,6 +118,7 @@ export async function updateOrder(
     notes?: string;
     adminNotes?: string;
     paymentMethod?: string;
+    paymentStatus?: string;
   }
 ): Promise<Order> {
   const response = await fetch(`${getBaseUrl()}/api/orders/${id}`, {

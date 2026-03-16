@@ -11,7 +11,7 @@ import {
   createManualOrder as createManualOrderFn,
   updateOrderItemAdditions as updateOrderItemAdditionsFn,
 } from "@/lib/fetch-functions/orders";
-import type { OrderStatus, OrderWithItems } from "@/types/models";
+import type { OrderStatus, PaymentStatus, OrderWithItems } from "@/types/models";
 import { CreateOrderInput } from "@/lib/validations";
 
 interface UseOrdersOptions {
@@ -93,6 +93,27 @@ export function useOrders(options: UseOrdersOptions = {}) {
     }
   };
 
+  // Mutation for updating payment status
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: ({ id, paymentStatus }: { id: string; paymentStatus: PaymentStatus }) =>
+      updateOrderFn(id, { paymentStatus }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all() });
+    },
+  });
+
+  const updatePaymentStatus = async (
+    id: string,
+    paymentStatus: PaymentStatus
+  ): Promise<boolean> => {
+    try {
+      await updatePaymentStatusMutation.mutateAsync({ id, paymentStatus });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const updateOrderStatus = async (
     id: string,
     status: OrderStatus,
@@ -161,6 +182,7 @@ export function useOrders(options: UseOrdersOptions = {}) {
     error: error ? (error as Error).message : null,
     refetch,
     updateOrderStatus,
+    updatePaymentStatus,
     deleteOrder,
     updateOrder,
     createManualOrder,
