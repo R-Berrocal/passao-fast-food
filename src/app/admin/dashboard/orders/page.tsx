@@ -22,6 +22,8 @@ import {
   CreditCard,
   ChevronLeft,
   ChevronRight,
+  MessageCircle,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -143,27 +145,48 @@ function OrderCard({
         <Separator />
 
         <div className="p-4">
-          <p className="text-sm font-medium text-muted-foreground">
-            {order.items.length} productos
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
+            {order.items.length} {order.items.length === 1 ? "producto" : "productos"}
           </p>
-          <div className="mt-2 space-y-1">
-            {order.items.slice(0, 3).map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span>
-                  {item.quantity}x {item.productName}
-                </span>
-                <span className="text-muted-foreground">
-                  {formatPrice(item.totalPrice)}
-                </span>
+          <div className="max-h-[140px] overflow-y-auto space-y-1.5 pr-1">
+            {order.items.map((item) => (
+              <div key={item.id}>
+                <div className="flex items-baseline justify-between text-sm gap-2">
+                  <span className="leading-snug">{item.quantity}x {item.productName}</span>
+                  <span className="text-muted-foreground shrink-0">{formatPrice(item.totalPrice)}</span>
+                </div>
+                {item.additions.length > 0 && (
+                  <p className="text-xs text-muted-foreground break-words pl-3 leading-snug">
+                    + {item.additions.map((a) => a.additionName).join(", ")}
+                  </p>
+                )}
               </div>
             ))}
-            {order.items.length > 3 && (
-              <p className="text-sm text-muted-foreground">
-                +{order.items.length - 3} más...
-              </p>
-            )}
           </div>
         </div>
+
+        {(order.notes || order.adminNotes) && (
+          <div className="px-4 pb-3 space-y-2">
+            {order.notes && (
+              <div className="rounded-md bg-muted/50 px-3 py-2">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">Nota del cliente</span>
+                </div>
+                <p className="text-xs break-words leading-snug">{order.notes}</p>
+              </div>
+            )}
+            {order.adminNotes && (
+              <div className="rounded-md bg-amber-50 dark:bg-amber-950/20 px-3 py-2">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Lock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Nota del admin</span>
+                </div>
+                <p className="text-xs break-words leading-snug text-amber-800 dark:text-amber-200">{order.adminNotes}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <Separator />
 
@@ -303,9 +326,9 @@ export default function OrdersPage() {
             <Skeleton className="mt-2 h-4 w-64" />
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-24" />
+            <Skeleton key={i} className="h-[52px]" />
           ))}
         </div>
         <Skeleton className="h-16" />
@@ -360,52 +383,52 @@ export default function OrdersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-yellow-500/30 bg-yellow-500/5">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500">
-              <Clock className="h-6 w-6 text-white" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Card className="border-yellow-500/20 bg-yellow-500/5">
+          <CardContent className="flex items-center justify-between p-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-yellow-500">
+                <Clock className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="text-sm text-muted-foreground">Pendientes</span>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Pendientes</p>
-              <p className="text-2xl font-bold">{orderStats.pending}</p>
-            </div>
+            <span className="text-xl font-bold">{orderStats.pending}</span>
           </CardContent>
         </Card>
 
-        <Card className="border-blue-500/30 bg-blue-500/5">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500">
-              <ChefHat className="h-6 w-6 text-white" />
+        <Card className="border-blue-500/20 bg-blue-500/5">
+          <CardContent className="flex items-center justify-between p-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500">
+                <ChefHat className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="text-sm text-muted-foreground">Preparando</span>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Preparando</p>
-              <p className="text-2xl font-bold">{orderStats.preparing}</p>
-            </div>
+            <span className="text-xl font-bold">{orderStats.preparing}</span>
           </CardContent>
         </Card>
 
-        <Card className="border-green-500/30 bg-green-500/5">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500">
-              <Package className="h-6 w-6 text-white" />
+        <Card className="border-green-500/20 bg-green-500/5">
+          <CardContent className="flex items-center justify-between p-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-500">
+                <Package className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="text-sm text-muted-foreground">Listos</span>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Listos</p>
-              <p className="text-2xl font-bold">{orderStats.ready}</p>
-            </div>
+            <span className="text-xl font-bold">{orderStats.ready}</span>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-500/30 bg-gray-500/5">
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-500">
-              <CheckCircle2 className="h-6 w-6 text-white" />
+        <Card className="border-gray-500/20 bg-gray-500/5">
+          <CardContent className="flex items-center justify-between p-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-500">
+                <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="text-sm text-muted-foreground">Entregados</span>
             </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Entregados</p>
-              <p className="text-2xl font-bold">{orderStats.delivered}</p>
-            </div>
+            <span className="text-xl font-bold">{orderStats.delivered}</span>
           </CardContent>
         </Card>
       </div>
