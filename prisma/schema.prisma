@@ -95,6 +95,7 @@ model Address {
   orders Order[]
 
   @@map("addresses")
+  @@index([userId])
 }
 
 // ============================================================================
@@ -134,6 +135,7 @@ model Product {
   orderItems OrderItem[]
 
   @@map("products")
+  @@index([categoryId])
 }
 
 model Addition {
@@ -204,6 +206,7 @@ model Order {
   @@index([status])
   @@index([createdAt])
   @@index([userId])
+  @@index([addressId])
   @@map("orders")
 }
 
@@ -222,6 +225,8 @@ model OrderItem {
   additions OrderItemAddition[]
 
   @@map("order_items")
+  @@index([orderId])
+  @@index([productId])
 }
 
 model OrderItemAddition {
@@ -235,6 +240,8 @@ model OrderItemAddition {
   addition  Addition  @relation(fields: [additionId], references: [id], onDelete: Restrict)
 
   @@map("order_item_additions")
+  @@index([orderItemId])
+  @@index([additionId])
 }
 
 // ============================================================================
