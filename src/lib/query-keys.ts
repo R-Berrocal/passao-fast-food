@@ -62,6 +62,8 @@ export const queryKeys = {
       [...queryKeys.orders.lists(), options] as const,
     details: () => [...queryKeys.orders.all(), "detail"] as const,
     detail: (id: string) => [...queryKeys.orders.details(), id] as const,
+    tracking: (orderNumber: string) =>
+      [...queryKeys.orders.all(), "tracking", orderNumber] as const,
   },
 
   // Users

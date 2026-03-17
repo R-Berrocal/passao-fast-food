@@ -165,6 +165,34 @@ export interface OrderWithItems extends Order {
   })[];
 }
 
+// Order Tracking (public, limited fields)
+export interface OrderTrackingItem {
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  productName: string;
+  additions: { name: string; price: number }[];
+}
+
+export interface OrderTracking {
+  orderNumber: string;
+  status: OrderStatus;
+  type: OrderType;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  customerName: string;
+  notes: string | null;
+  subtotal: number;
+  total: number;
+  createdAt: string;
+  confirmedAt: string | null;
+  preparingAt: string | null;
+  readyAt: string | null;
+  deliveredAt: string | null;
+  cancelledAt: string | null;
+  items: OrderTrackingItem[];
+}
+
 // ============================================================================
 // BUSINESS CONFIG
 // ============================================================================

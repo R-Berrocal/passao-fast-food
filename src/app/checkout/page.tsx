@@ -246,6 +246,9 @@ export default function CheckoutPage() {
 
     lines.push("");
     lines.push("¡Gracias por tu pedido!");
+    lines.push("");
+    lines.push("*Sigue el estado de tu pedido aquí:*");
+    lines.push(`${process.env.NEXT_PUBLIC_BASE_URL}/orders/${orderNumber}`);
 
     return lines.join("\n");
   };

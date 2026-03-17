@@ -2,7 +2,7 @@
  * Orders fetch functions for server and client-side data fetching
  */
 
-import type { Order, OrderWithItems, ApiResponse } from "@/types/models";
+import type { Order, OrderWithItems, OrderTracking, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
 import { getBaseUrl } from "@/lib/utils";
 
@@ -42,6 +42,20 @@ export async function fetchOrder(id: string): Promise<Order> {
     headers: getAuthHeaders(),
   });
   const result: ApiResponse<Order> = await response.json();
+
+  if (!result.success || !result.data) {
+    throw new Error(result.error || "Orden no encontrada");
+  }
+
+  return result.data;
+}
+
+export async function fetchOrderTracking(orderNumber: string): Promise<OrderTracking> {
+  const response = await fetch(
+    `${getBaseUrl()}/api/orders/track/${encodeURIComponent(orderNumber)}`,
+    { cache: "no-store" }
+  );
+  const result: ApiResponse<OrderTracking> = await response.json();
 
   if (!result.success || !result.data) {
     throw new Error(result.error || "Orden no encontrada");
