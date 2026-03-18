@@ -45,44 +45,71 @@ npm run db:reset     # Reset database and apply migrations
 ├── docs/
 │   └── data-model.md           # Data model documentation
 └── src/
+    ├── generated/prisma/       # Prisma client (auto-generated, do not edit)
     ├── app/
     │   ├── layout.tsx          # Root layout with providers
     │   ├── page.tsx            # Landing page (menu browsing)
     │   ├── checkout/           # Checkout flow (delivery/pickup)
+    │   ├── orders/[orderNumber]/ # Public order tracking page
     │   ├── api/                # Route handlers (REST API)
+    │   │   ├── auth/           # login, register, setup-password, me
+    │   │   ├── products/       # CRUD products
+    │   │   ├── categories/     # CRUD categories
+    │   │   ├── additions/      # CRUD additions
+    │   │   ├── orders/         # Orders + status updates + item edits + tracking
+    │   │   ├── admin/orders/   # Admin-scoped order queries
+    │   │   ├── users/          # User management + addresses
+    │   │   ├── me/             # Authenticated user's own addresses
+    │   │   ├── customers/      # Guest/customer lookup by phone + addresses
+    │   │   ├── supplies/       # Supply purchase tracking
+    │   │   ├── reports/daily/  # Daily sales reports
+    │   │   ├── dashboard/stats/# Dashboard KPI stats
+    │   │   └── business/       # config + hours
     │   └── admin/
+    │       ├── login/          # Admin login page
+    │       ├── setup-password/ # First-time password setup
     │       └── dashboard/      # Full admin dashboard
     │           ├── layout.tsx  # Sidebar navigation layout
-    │           ├── products/   # CRUD products
-    │           ├── additions/  # CRUD additions
+    │           ├── page.tsx    # Dashboard stats overview
+    │           ├── products/   # CRUD products (list, new, [id]/edit)
+    │           ├── additions/  # CRUD additions (list, new, [id]/edit)
     │           ├── categories/ # CRUD categories
-    │           ├── orders/     # Order management
-    │           └── users/      # User management
+    │           ├── orders/     # Order management (list, new, [id]/edit)
+    │           ├── users/      # User management (list, new, [id]/edit)
+    │           ├── supplies/   # Supply purchases (list, new)
+    │           ├── reports/    # Sales reports
+    │           └── settings/   # Business config + hours
     ├── components/
-    │   ├── ui/                 # shadcn/ui primitives
+    │   ├── ui/                 # shadcn/ui primitives + ImageUpload
     │   ├── providers/          # QueryProvider, ThemeProvider, AuthProvider
+    │   ├── auth/               # ProtectedRoute component
     │   ├── layout/             # Navbar, Hero, Footer
     │   ├── menu/               # MenuItem, MenuList, AddToCartDialog
     │   └── cart/               # Cart drawer
-    ├── hooks/                  # TanStack Query hooks (useProducts, useCategories, etc.)
+    ├── hooks/                  # TanStack Query hooks per entity
     ├── stores/
     │   ├── use-cart-store.ts   # Zustand store (cart + UI state)
     │   └── use-auth-store.ts   # Auth state and helpers
     ├── types/
-    │   └── models.ts           # TypeScript types, ApiResponse<T>, and helpers
+    │   └── models.ts           # TypeScript types and helpers
     └── lib/
         ├── utils.ts            # cn() utility for classnames
         ├── prisma.ts           # Prisma client singleton
+        ├── supabase.ts         # Supabase client (for Storage)
+        ├── storage.ts          # uploadProductImage / deleteProductImage
+        ├── auth.ts             # JWT helpers, requireAdmin, requireStaff
+        ├── api-response.ts     # Response helpers (successResponse, errorResponse, etc.)
         ├── query-client.ts     # TanStack Query client singleton
         ├── query-keys.ts       # Query key factory for cache management
-        └── fetch-functions.ts  # Server-side fetch functions for SSR prefetch
+        ├── validations/        # Zod schemas per entity (product, addition, order, etc.)
+        └── fetch-functions/    # Server-side fetch functions for SSR prefetch (per entity)
 ```
 
 ### Two Main User Flows
 
-1. **Customer Flow**: Landing → Browse menu by category → Add items with additions → Cart → Checkout (delivery/pickup forms)
+1. **Customer Flow**: Landing → Browse menu by category → Add items with additions → Cart → Checkout (delivery/pickup forms) → Order tracking at `/orders/[orderNumber]`
 
-2. **Admin Flow**: `/admin/dashboard` → Sidebar navigation → Products/Orders/Users/Settings management
+2. **Admin Flow**: `/admin/login` → `/admin/dashboard` → Sidebar navigation → Products/Categories/Additions/Orders/Users/Supplies/Reports/Settings
 
 ### Key Patterns
 
@@ -147,6 +174,7 @@ export function PageContent() {
 **Query Keys Factory** (`src/lib/query-keys.ts`):
 - Centralized query keys for type safety and cache management
 - Hierarchical structure: `queryKeys.products.list()`, `queryKeys.products.detail(id)`
+- Covers all entities: products, categories, additions, orders, users, supplies, reports, dashboard, business
 
 #### State Management
 
@@ -159,17 +187,19 @@ export function PageContent() {
 
 **Theme**: Dark mode default. Primary color is lime/yellow (oklch). Toggle uses CSS classes (`dark:block`/`block dark:hidden`) to avoid hydration issues. Theme state shared globally via next-themes provider.
 
-**Auth UI**: Navbar includes login/register dialogs. JWT-based authentication with admin route protection.
+**Auth**: JWT-based. Three roles: `admin`, `staff`, `customer`. Use `requireAdmin(request)` or `requireStaff(request)` from `@/lib/auth` in route handlers. Navbar includes login/register dialogs for customers. Admin login at `/admin/login`.
 
-**Database**: PostgreSQL with Prisma ORM. Schema in `prisma/schema.prisma`. Types and helpers in `src/types/models.ts`. Run `npm run db:seed` after migrations to populate initial data.
+**Database**: PostgreSQL with Prisma ORM. Schema in `prisma/schema.prisma`. Prisma client generated to `src/generated/prisma`. Run `npm run db:seed` after migrations to populate initial data.
 
 **Component Pattern**: UI primitives in `components/ui/` follow shadcn/ui conventions with Radix UI, CVA variants, and the `cn()` utility.
 
-**API Response Type**: Use the centralized `ApiResponse<T>` from `@/types/models` for all API responses.
+**API Response Helpers**: Use helpers from `@/lib/api-response` in route handlers: `successResponse`, `errorResponse`, `createdResponse`, `notFoundResponse`, `unauthorizedResponse`, `forbiddenResponse`, `serverErrorResponse`. The `ApiResponse<T>` type is defined there.
 
-**Images**: Unsplash URLs. Remote patterns configured in `next.config.ts`.
+**Validations**: Zod schemas live in `src/lib/validations/` per entity. Import from individual files or via the index barrel.
 
-**Locale**: Spanish (es-CO) for price formatting and UI text.
+**Images**: Product images upload to Supabase Storage via `uploadProductImage()` / `deleteProductImage()` from `@/lib/storage`. Use the `ImageUpload` component in forms. Supabase URL patterns are whitelisted in `next.config.ts`.
+
+**Locale**: Spanish (es-CO) for price formatting and UI text. Prices stored as integers (pesos colombianos, no decimals).
 
 ### Path Alias
 Use `@/*` to import from `src/*` (configured in tsconfig.json).
