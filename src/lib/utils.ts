@@ -17,7 +17,12 @@ export function getBaseUrl(): string {
   }
 
   // Server-side: use absolute URL
-  // Vercel provides VERCEL_URL for deployments
+  // NEXT_PUBLIC_BASE_URL should be set in Vercel to the production domain
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+
+  // Vercel provides VERCEL_URL for deployments (auto-generated URL)
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
