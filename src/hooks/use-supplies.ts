@@ -5,9 +5,10 @@ import { queryKeys } from "@/lib/query-keys";
 import {
   fetchSupplies,
   createSupply as createSupplyFn,
+  updateSupply as updateSupplyFn,
   deleteSupply as deleteSupplyFn,
 } from "@/lib/fetch-functions/supplies";
-import type { CreateSupplyInput } from "@/lib/validations/supply";
+import type { CreateSupplyInput, UpdateSupplyInput } from "@/lib/validations/supply";
 
 export function useSupplies(date?: string) {
   const queryClient = useQueryClient();
@@ -32,6 +33,14 @@ export function useSupplies(date?: string) {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateSupplyInput }) =>
+      updateSupplyFn(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.supplies.all() });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteSupplyFn(id),
     onSuccess: () => {
@@ -42,6 +51,14 @@ export function useSupplies(date?: string) {
   const createSupply = async (data: CreateSupplyInput) => {
     try {
       return await createMutation.mutateAsync(data);
+    } catch {
+      return null;
+    }
+  };
+
+  const updateSupply = async (id: string, data: UpdateSupplyInput) => {
+    try {
+      return await updateMutation.mutateAsync({ id, data });
     } catch {
       return null;
     }
@@ -61,8 +78,10 @@ export function useSupplies(date?: string) {
     isLoading,
     error: error ? (error as Error).message : null,
     createSupply,
+    updateSupply,
     deleteSupply,
     isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };
 }

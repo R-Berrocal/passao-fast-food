@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Loader2, PackageOpen } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronLeft, ChevronRight, ShoppingBag, Loader2, PackageOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -160,6 +160,16 @@ export default function SuppliesPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-lg">{formatPrice(supply.amount)}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        asChild
+                      >
+                        <Link href={`/admin/dashboard/supplies/${supply.id}/edit`}>
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

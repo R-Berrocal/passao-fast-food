@@ -1,7 +1,7 @@
 import type { SupplyPurchase, ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
 import { getBaseUrl } from "@/lib/utils";
-import type { CreateSupplyInput } from "@/lib/validations/supply";
+import type { CreateSupplyInput, UpdateSupplyInput } from "@/lib/validations/supply";
 
 export async function fetchSupplies(date?: string): Promise<SupplyPurchase[]> {
   const params = date ? `?date=${date}` : "";
@@ -22,6 +22,17 @@ export async function createSupply(data: CreateSupplyInput): Promise<SupplyPurch
   });
   const result: ApiResponse<SupplyPurchase> = await response.json();
   if (!result.success || !result.data) throw new Error(result.error || "Error al crear compra");
+  return result.data;
+}
+
+export async function updateSupply(id: string, data: UpdateSupplyInput): Promise<SupplyPurchase> {
+  const response = await fetch(`${getBaseUrl()}/api/supplies/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  const result: ApiResponse<SupplyPurchase> = await response.json();
+  if (!result.success || !result.data) throw new Error(result.error || "Error al actualizar compra");
   return result.data;
 }
 

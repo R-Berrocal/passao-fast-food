@@ -18,3 +18,6 @@ export const createSupplySchema = z.object({
 });
 
 export type CreateSupplyInput = z.infer<typeof createSupplySchema>;
+
+export const updateSupplySchema = createSupplySchema.partial();
+export type UpdateSupplyInput = z.infer<typeof updateSupplySchema>;
