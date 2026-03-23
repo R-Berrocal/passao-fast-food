@@ -302,6 +302,7 @@ export interface SupplyPurchase {
   category: string;
   amount: number;
   date: Date;
+  paymentMethod: PaymentMethod;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;

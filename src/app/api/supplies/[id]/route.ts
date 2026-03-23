@@ -25,7 +25,7 @@ export async function PATCH(
     const body = await request.json();
     const parsed = updateSupplySchema.safeParse(body);
     if (!parsed.success) {
-      return errorResponse(parsed.error.errors[0].message, 400);
+      return errorResponse(parsed.error.issues[0].message, 400);
     }
 
     const updated = await prisma.supplyPurchase.update({

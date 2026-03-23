@@ -12,10 +12,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date") || new Date().toISOString().slice(0, 10);
+    const endDateParam = searchParams.get("endDate") || dateParam;
 
-    const { startUTC, endUTC } = getColombiaDateRange(dateParam);
+    // Use start of dateParam → end of endDateParam (single query covers full range)
+    const { startUTC } = getColombiaDateRange(dateParam);
+    const { endUTC } = getColombiaDateRange(endDateParam);
 
-    // Fetch delivered orders in date range
+    // Fetch orders in date range
     const orders = await prisma.order.findMany({
       where: {
         status: { not: "cancelled" },
@@ -24,7 +27,6 @@ export async function GET(request: NextRequest) {
       select: { total: true, paymentMethod: true },
     });
 
-    // Calculate sales totals
     const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
     const totalOrders = orders.length;
 
@@ -46,9 +48,14 @@ export async function GET(request: NextRequest) {
     const cashRevenue = paymentMap.get("cash")?.total || 0;
     const digitalRevenue = totalRevenue - cashRevenue;
 
-    // Fetch supply purchases for the date
+    // Fetch supply purchases in date range (DATE field — no timezone conversion needed)
     const supplies = await prisma.supplyPurchase.findMany({
-      where: { date: { equals: new Date(dateParam) } },
+      where: {
+        date: {
+          gte: new Date(dateParam),
+          lte: new Date(endDateParam),
+        },
+      },
       select: { amount: true, paymentMethod: true },
     });
 

@@ -95,7 +95,7 @@ export const queryKeys = {
   // Reports
   reports: {
     all: () => ["reports"] as const,
-    daily: (date: string) => [...queryKeys.reports.all(), "daily", date] as const,
+    daily: (startDate: string, endDate?: string) => [...queryKeys.reports.all(), "daily", startDate, endDate] as const,
   },
 
   // Dashboard

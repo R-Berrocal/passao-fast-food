@@ -28,3 +28,28 @@ export function formatDateLabel(dateStr: string): string {
     year: "numeric",
   });
 }
+
+/**
+ * Formats a date range as a short human-readable label in Spanish.
+ * Single day → uses formatDateLabel. Range → "20 mar – 23 mar 2026"
+ */
+export function formatRangeLabel(startDate: string, endDate: string): string {
+  if (startDate === endDate) return formatDateLabel(startDate);
+  const start = new Date(startDate + "T12:00:00").toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "short",
+  });
+  const end = new Date(endDate + "T12:00:00").toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  return `${start} – ${end}`;
+}
+
+/**
+ * Converts a Date object to a YYYY-MM-DD string in Colombia timezone.
+ */
+export function dateToString(date: Date): string {
+  return date.toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
+}
