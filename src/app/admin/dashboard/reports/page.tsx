@@ -159,10 +159,40 @@ export default function ReportsPage() {
                     {report.supplies.totalPurchases} compras
                   </p>
                 </div>
-                {report.supplies.totalPurchases === 0 && (
-                  <p className="text-sm text-muted-foreground italic">
-                    Sin compras registradas este día
-                  </p>
+                <Separator />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Banknote className="h-4 w-4 text-muted-foreground" />
+                      <span>Efectivo</span>
+                    </div>
+                    <span className="font-semibold">{formatPrice(report.supplies.cashSpent)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Smartphone className="h-4 w-4 text-muted-foreground" />
+                      <span>Digital</span>
+                    </div>
+                    <span className="font-semibold">{formatPrice(report.supplies.digitalSpent)}</span>
+                  </div>
+                </div>
+                {report.supplies.byPaymentMethod.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                        Detalle
+                      </p>
+                      {report.supplies.byPaymentMethod.map(({ method, count, total }) => (
+                        <div key={method} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {PAYMENT_METHOD_LABELS[method as keyof typeof PAYMENT_METHOD_LABELS] || method} ({count})
+                          </span>
+                          <span>{formatPrice(total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

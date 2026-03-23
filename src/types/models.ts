@@ -323,6 +323,13 @@ export interface DailyReport {
   supplies: {
     totalPurchases: number;
     totalSpent: number;
+    cashSpent: number;
+    digitalSpent: number;
+    byPaymentMethod: {
+      method: string;
+      count: number;
+      total: number;
+    }[];
   };
   balance: number;
 }

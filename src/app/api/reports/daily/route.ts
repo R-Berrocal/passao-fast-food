@@ -49,16 +49,34 @@ export async function GET(request: NextRequest) {
     // Fetch supply purchases for the date
     const supplies = await prisma.supplyPurchase.findMany({
       where: { date: { equals: new Date(dateParam) } },
-      select: { amount: true },
+      select: { amount: true, paymentMethod: true },
     });
 
     const totalSpent = supplies.reduce((sum, s) => sum + s.amount, 0);
     const totalPurchases = supplies.length;
 
+    const supplyPaymentMap = new Map<string, { count: number; total: number }>();
+    for (const supply of supplies) {
+      const existing = supplyPaymentMap.get(supply.paymentMethod) || { count: 0, total: 0 };
+      supplyPaymentMap.set(supply.paymentMethod, {
+        count: existing.count + 1,
+        total: existing.total + supply.amount,
+      });
+    }
+
+    const suppliesByPaymentMethod = Array.from(supplyPaymentMap.entries()).map(([method, data]) => ({
+      method,
+      count: data.count,
+      total: data.total,
+    }));
+
+    const cashSpent = supplyPaymentMap.get("cash")?.total || 0;
+    const digitalSpent = totalSpent - cashSpent;
+
     const report: DailyReport = {
       date: dateParam,
       sales: { totalOrders, totalRevenue, cashRevenue, digitalRevenue, byPaymentMethod },
-      supplies: { totalPurchases, totalSpent },
+      supplies: { totalPurchases, totalSpent, cashSpent, digitalSpent, byPaymentMethod: suppliesByPaymentMethod },
       balance: totalRevenue - totalSpent,
     };
 
