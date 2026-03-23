@@ -256,6 +256,7 @@ export const SupplyPurchaseScalarFieldEnum = {
   category: 'category',
   amount: 'amount',
   date: 'date',
+  paymentMethod: 'paymentMethod',
   notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

@@ -20,7 +20,11 @@ import {
 } from "@/components/ui/select";
 import { useSupplies } from "@/hooks/use-supplies";
 import { z } from "zod";
-import { SUPPLY_CATEGORIES, type CreateSupplyInput } from "@/lib/validations/supply";
+import {
+  SUPPLY_CATEGORIES,
+  type CreateSupplyInput,
+} from "@/lib/validations/supply";
+import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from "@/lib/validations/order";
 import { getTodayString } from "@/lib/date-utils";
 
 // Form-specific schema uses z.string() for date to avoid z.coerce.date() type mismatch with useForm
@@ -29,6 +33,7 @@ const supplyFormSchema = z.object({
   category: z.enum(SUPPLY_CATEGORIES, { error: () => ({ message: "Categoría inválida" }) }),
   amount: z.number().int().positive("El monto debe ser mayor a 0"),
   date: z.string().min(1),
+  paymentMethod: z.enum(PAYMENT_METHODS, { error: () => ({ message: "Método de pago inválido" }) }),
   notes: z.string().optional(),
 });
 type SupplyFormValues = z.infer<typeof supplyFormSchema>;
@@ -45,6 +50,7 @@ export default function NewSupplyPage() {
       category: undefined,
       amount: 0,
       date: getTodayString(),
+      paymentMethod: "cash",
       notes: "",
     },
   });
@@ -143,13 +149,43 @@ export default function NewSupplyPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="date">Fecha *</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  {...form.register("date")}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Fecha *</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    {...form.register("date")}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Método de pago *</Label>
+                  <Select
+                    value={form.watch("paymentMethod")}
+                    onValueChange={(val) =>
+                      form.setValue("paymentMethod", val as (typeof PAYMENT_METHODS)[number], {
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map((method) => (
+                        <SelectItem key={method} value={method}>
+                          {PAYMENT_METHOD_LABELS[method]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.paymentMethod && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.paymentMethod.message}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">

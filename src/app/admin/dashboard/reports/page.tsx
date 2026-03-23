@@ -19,13 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDailyReport } from "@/hooks/use-reports";
 import { formatPrice } from "@/stores/use-cart-store";
 import { getTodayString, formatDateLabel } from "@/lib/date-utils";
-
-const PAYMENT_LABELS: Record<string, string> = {
-  cash: "Efectivo",
-  nequi: "Nequi",
-  daviplata: "Daviplata",
-  transfer: "Transferencia",
-};
+import { PAYMENT_METHOD_LABELS } from "@/lib/validations/order";
 
 export default function ReportsPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayString());
@@ -139,7 +133,7 @@ export default function ReportsPage() {
                       {report.sales.byPaymentMethod.map(({ method, count, total }) => (
                         <div key={method} className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
-                            {PAYMENT_LABELS[method] || method} ({count})
+                            {PAYMENT_METHOD_LABELS[method as keyof typeof PAYMENT_METHOD_LABELS] || method} ({count})
                           </span>
                           <span>{formatPrice(total)}</span>
                         </div>

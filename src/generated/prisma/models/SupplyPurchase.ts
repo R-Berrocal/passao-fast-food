@@ -40,6 +40,7 @@ export type SupplyPurchaseMinAggregateOutputType = {
   category: string | null
   amount: number | null
   date: Date | null
+  paymentMethod: string | null
   notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -51,6 +52,7 @@ export type SupplyPurchaseMaxAggregateOutputType = {
   category: string | null
   amount: number | null
   date: Date | null
+  paymentMethod: string | null
   notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -62,6 +64,7 @@ export type SupplyPurchaseCountAggregateOutputType = {
   category: number
   amount: number
   date: number
+  paymentMethod: number
   notes: number
   createdAt: number
   updatedAt: number
@@ -83,6 +86,7 @@ export type SupplyPurchaseMinAggregateInputType = {
   category?: true
   amount?: true
   date?: true
+  paymentMethod?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -94,6 +98,7 @@ export type SupplyPurchaseMaxAggregateInputType = {
   category?: true
   amount?: true
   date?: true
+  paymentMethod?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -105,6 +110,7 @@ export type SupplyPurchaseCountAggregateInputType = {
   category?: true
   amount?: true
   date?: true
+  paymentMethod?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -203,6 +209,7 @@ export type SupplyPurchaseGroupByOutputType = {
   category: string
   amount: number
   date: Date
+  paymentMethod: string
   notes: string | null
   createdAt: Date
   updatedAt: Date
@@ -237,6 +244,7 @@ export type SupplyPurchaseWhereInput = {
   category?: Prisma.StringFilter<"SupplyPurchase"> | string
   amount?: Prisma.IntFilter<"SupplyPurchase"> | number
   date?: Prisma.DateTimeFilter<"SupplyPurchase"> | Date | string
+  paymentMethod?: Prisma.StringFilter<"SupplyPurchase"> | string
   notes?: Prisma.StringNullableFilter<"SupplyPurchase"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SupplyPurchase"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SupplyPurchase"> | Date | string
@@ -248,6 +256,7 @@ export type SupplyPurchaseOrderByWithRelationInput = {
   category?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -262,6 +271,7 @@ export type SupplyPurchaseWhereUniqueInput = Prisma.AtLeast<{
   category?: Prisma.StringFilter<"SupplyPurchase"> | string
   amount?: Prisma.IntFilter<"SupplyPurchase"> | number
   date?: Prisma.DateTimeFilter<"SupplyPurchase"> | Date | string
+  paymentMethod?: Prisma.StringFilter<"SupplyPurchase"> | string
   notes?: Prisma.StringNullableFilter<"SupplyPurchase"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SupplyPurchase"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SupplyPurchase"> | Date | string
@@ -273,6 +283,7 @@ export type SupplyPurchaseOrderByWithAggregationInput = {
   category?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -292,6 +303,7 @@ export type SupplyPurchaseScalarWhereWithAggregatesInput = {
   category?: Prisma.StringWithAggregatesFilter<"SupplyPurchase"> | string
   amount?: Prisma.IntWithAggregatesFilter<"SupplyPurchase"> | number
   date?: Prisma.DateTimeWithAggregatesFilter<"SupplyPurchase"> | Date | string
+  paymentMethod?: Prisma.StringWithAggregatesFilter<"SupplyPurchase"> | string
   notes?: Prisma.StringNullableWithAggregatesFilter<"SupplyPurchase"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SupplyPurchase"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SupplyPurchase"> | Date | string
@@ -303,6 +315,7 @@ export type SupplyPurchaseCreateInput = {
   category: string
   amount: number
   date: Date | string
+  paymentMethod?: string
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -314,6 +327,7 @@ export type SupplyPurchaseUncheckedCreateInput = {
   category: string
   amount: number
   date: Date | string
+  paymentMethod?: string
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -325,6 +339,7 @@ export type SupplyPurchaseUpdateInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -336,6 +351,7 @@ export type SupplyPurchaseUncheckedUpdateInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -347,6 +363,7 @@ export type SupplyPurchaseCreateManyInput = {
   category: string
   amount: number
   date: Date | string
+  paymentMethod?: string
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -358,6 +375,7 @@ export type SupplyPurchaseUpdateManyMutationInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -369,6 +387,7 @@ export type SupplyPurchaseUncheckedUpdateManyInput = {
   category?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentMethod?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -380,6 +399,7 @@ export type SupplyPurchaseCountOrderByAggregateInput = {
   category?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -395,6 +415,7 @@ export type SupplyPurchaseMaxOrderByAggregateInput = {
   category?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -406,6 +427,7 @@ export type SupplyPurchaseMinOrderByAggregateInput = {
   category?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   date?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -423,6 +445,7 @@ export type SupplyPurchaseSelect<ExtArgs extends runtime.Types.Extensions.Intern
   category?: boolean
   amount?: boolean
   date?: boolean
+  paymentMethod?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -434,6 +457,7 @@ export type SupplyPurchaseSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   category?: boolean
   amount?: boolean
   date?: boolean
+  paymentMethod?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -445,6 +469,7 @@ export type SupplyPurchaseSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   category?: boolean
   amount?: boolean
   date?: boolean
+  paymentMethod?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -456,12 +481,13 @@ export type SupplyPurchaseSelectScalar = {
   category?: boolean
   amount?: boolean
   date?: boolean
+  paymentMethod?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SupplyPurchaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "description" | "category" | "amount" | "date" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["supplyPurchase"]>
+export type SupplyPurchaseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "description" | "category" | "amount" | "date" | "paymentMethod" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["supplyPurchase"]>
 
 export type $SupplyPurchasePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SupplyPurchase"
@@ -472,6 +498,7 @@ export type $SupplyPurchasePayload<ExtArgs extends runtime.Types.Extensions.Inte
     category: string
     amount: number
     date: Date
+    paymentMethod: string
     notes: string | null
     createdAt: Date
     updatedAt: Date
@@ -903,6 +930,7 @@ export interface SupplyPurchaseFieldRefs {
   readonly category: Prisma.FieldRef<"SupplyPurchase", 'String'>
   readonly amount: Prisma.FieldRef<"SupplyPurchase", 'Int'>
   readonly date: Prisma.FieldRef<"SupplyPurchase", 'DateTime'>
+  readonly paymentMethod: Prisma.FieldRef<"SupplyPurchase", 'String'>
   readonly notes: Prisma.FieldRef<"SupplyPurchase", 'String'>
   readonly createdAt: Prisma.FieldRef<"SupplyPurchase", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SupplyPurchase", 'DateTime'>

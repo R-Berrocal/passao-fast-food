@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+export const PAYMENT_METHODS = ["cash", "nequi", "daviplata", "transfer"] as const;
+export type PaymentMethodValue = typeof PAYMENT_METHODS[number];
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethodValue, string> = {
+  cash: "Efectivo",
+  nequi: "Nequi",
+  daviplata: "Daviplata",
+  transfer: "Transferencia",
+};
+
 const orderItemAdditionSchema = z.object({
   additionId: z.string().min(1),
 });
@@ -19,7 +29,7 @@ export const createOrderSchema = z.object({
   addressId: z.string().optional(), // ID de dirección guardada
   notes: z.string().optional(),
   adminNotes: z.string().max(300, "La nota no puede superar los 300 caracteres").optional(),
-  paymentMethod: z.enum(["cash", "nequi", "daviplata", "transfer"]),
+  paymentMethod: z.enum(PAYMENT_METHODS),
   paymentReference: z.string().optional(),
   items: z.array(orderItemSchema).min(1, "Debe agregar al menos un producto"),
 });
