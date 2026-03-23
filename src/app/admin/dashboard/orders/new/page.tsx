@@ -58,6 +58,7 @@ interface CartItemAddition {
 }
 
 interface CartItem {
+  cartItemId: string;
   product: Product;
   quantity: number;
   additions: CartItemAddition[];
@@ -108,7 +109,6 @@ function AddProductDialog({
   product,
   additions,
   additionsLoading,
-  existingCartItem,
   open,
   onOpenChange,
   onConfirm,
@@ -116,15 +116,12 @@ function AddProductDialog({
   product: Product | null;
   additions: Addition[];
   additionsLoading: boolean;
-  existingCartItem?: CartItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (product: Product, additions: CartItemAddition[], quantity: number) => void;
 }) {
-  const [selectedAdditions, setSelectedAdditions] = useState<CartItemAddition[]>(
-    existingCartItem?.additions ?? []
-  );
-  const [quantity, setQuantity] = useState(existingCartItem?.quantity ?? 1);
+  const [selectedAdditions, setSelectedAdditions] = useState<CartItemAddition[]>([]);
+  const [quantity, setQuantity] = useState(1);
 
   if (!product) return null;
 
@@ -238,7 +235,7 @@ function AddProductDialog({
             Cancelar
           </Button>
           <Button onClick={handleConfirm}>
-            {existingCartItem ? "Actualizar" : "Agregar"}
+            Agregar
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -252,16 +249,12 @@ function AddProductDialog({
 
 function ProductCard({
   product,
-  cartItem,
+  cartCount,
   onAdd,
-  onIncrement,
-  onDecrement,
 }: {
   product: Product;
-  cartItem?: CartItem;
+  cartCount: number;
   onAdd: () => void;
-  onIncrement: () => void;
-  onDecrement: () => void;
 }) {
   return (
     <Card className="overflow-hidden transition-all hover:border-primary/50">
@@ -271,17 +264,12 @@ function ProductCard({
             <p className="font-medium text-sm leading-tight line-clamp-2">{product.name}</p>
             <p className="text-primary font-bold mt-1">{formatPrice(product.price)}</p>
           </div>
-          {cartItem ? (
-            <div className="flex items-center gap-1 shrink-0">
-              <Button size="icon" variant="outline" className="h-7 w-7" onClick={onDecrement}>
-                <Minus className="h-3 w-3" />
-              </Button>
-              <span className="w-6 text-center text-sm font-bold">{cartItem.quantity}</span>
-              <Button size="icon" variant="outline" className="h-7 w-7" onClick={onIncrement}>
-                <Plus className="h-3 w-3" />
-              </Button>
-            </div>
-          ) : (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {cartCount > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+                {cartCount}
+              </Badge>
+            )}
             <Button
               size="icon"
               variant="outline"
@@ -290,7 +278,7 @@ function ProductCard({
             >
               <Plus className="h-3 w-3" />
             </Button>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -317,9 +305,9 @@ function CartContent({
   form: ReturnType<typeof useForm<CheckoutFormData>>;
   isSubmitting: boolean;
   submitError: string | null;
-  onIncrement: (productId: string) => void;
-  onDecrement: (productId: string) => void;
-  onRemove: (productId: string) => void;
+  onIncrement: (cartItemId: string) => void;
+  onDecrement: (cartItemId: string) => void;
+  onRemove: (cartItemId: string) => void;
   onSubmit: () => void;
 }) {
   const [isNotesOpen, setIsNotesOpen] = useState(false);
@@ -338,11 +326,11 @@ function CartContent({
             <p className="text-sm text-muted-foreground">Agrega productos al carrito</p>
           </div>
         ) : (
-          cart.map(({ product, quantity, additions }) => {
+          cart.map(({ cartItemId, product, quantity, additions }) => {
             const additionsTotal = additions.reduce((s, a) => s + a.price, 0);
             const itemTotal = (product.price + additionsTotal) * quantity;
             return (
-              <div key={product.id} className="flex items-start gap-2 rounded-lg border p-2">
+              <div key={cartItemId} className="flex items-start gap-2 rounded-lg border p-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium line-clamp-1">{product.name}</p>
                   {additions.length > 0 && (
@@ -357,7 +345,7 @@ function CartContent({
                     size="icon"
                     variant="ghost"
                     className="h-6 w-6"
-                    onClick={() => onDecrement(product.id)}
+                    onClick={() => onDecrement(cartItemId)}
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
@@ -366,7 +354,7 @@ function CartContent({
                     size="icon"
                     variant="ghost"
                     className="h-6 w-6"
-                    onClick={() => onIncrement(product.id)}
+                    onClick={() => onIncrement(cartItemId)}
                   >
                     <Plus className="h-3 w-3" />
                   </Button>
@@ -374,7 +362,7 @@ function CartContent({
                     size="icon"
                     variant="ghost"
                     className="h-6 w-6 text-destructive"
-                    onClick={() => onRemove(product.id)}
+                    onClick={() => onRemove(cartItemId)}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -638,40 +626,33 @@ export default function NewOrderPage() {
     selectedAdditions: CartItemAddition[],
     quantity: number
   ) => {
-    setCart((prev) => {
-      const exists = prev.find((i) => i.product.id === product.id);
-      if (exists) {
-        return prev.map((i) =>
-          i.product.id === product.id
-            ? { ...i, quantity, additions: selectedAdditions }
-            : i
-        );
-      }
-      return [...prev, { product, quantity, additions: selectedAdditions }];
-    });
+    setCart((prev) => [
+      ...prev,
+      { cartItemId: crypto.randomUUID(), product, quantity, additions: selectedAdditions },
+    ]);
   };
 
-  const incrementItem = (productId: string) => {
+  const incrementItem = (cartItemId: string) => {
     setCart((prev) =>
       prev.map((i) =>
-        i.product.id === productId ? { ...i, quantity: i.quantity + 1 } : i
+        i.cartItemId === cartItemId ? { ...i, quantity: i.quantity + 1 } : i
       )
     );
   };
 
-  const decrementItem = (productId: string) => {
+  const decrementItem = (cartItemId: string) => {
     setCart((prev) => {
-      const item = prev.find((i) => i.product.id === productId);
+      const item = prev.find((i) => i.cartItemId === cartItemId);
       if (!item) return prev;
-      if (item.quantity <= 1) return prev.filter((i) => i.product.id !== productId);
+      if (item.quantity <= 1) return prev.filter((i) => i.cartItemId !== cartItemId);
       return prev.map((i) =>
-        i.product.id === productId ? { ...i, quantity: i.quantity - 1 } : i
+        i.cartItemId === cartItemId ? { ...i, quantity: i.quantity - 1 } : i
       );
     });
   };
 
-  const removeItem = (productId: string) => {
-    setCart((prev) => prev.filter((i) => i.product.id !== productId));
+  const removeItem = (cartItemId: string) => {
+    setCart((prev) => prev.filter((i) => i.cartItemId !== cartItemId));
   };
 
   const onValidSubmit = async (values: CheckoutFormData) => {
@@ -780,10 +761,10 @@ export default function NewOrderPage() {
                   <ProductCard
                     key={product.id}
                     product={product}
-                    cartItem={cart.find((i) => i.product.id === product.id)}
+                    cartCount={cart
+                      .filter((i) => i.product.id === product.id)
+                      .reduce((sum, i) => sum + i.quantity, 0)}
                     onAdd={() => openAddDialog(product)}
-                    onIncrement={() => openAddDialog(product)}
-                    onDecrement={() => decrementItem(product.id)}
                   />
                 ))}
               </div>
@@ -859,9 +840,6 @@ export default function NewOrderPage() {
       <AddProductDialog
         key={dialogOpen ? dialogProduct?.id ?? "new" : "closed"}
         product={dialogProduct}
-        existingCartItem={
-          dialogProduct ? cart.find((i) => i.product.id === dialogProduct.id) : undefined
-        }
         additions={additions}
         additionsLoading={additionsLoading}
         open={dialogOpen}
