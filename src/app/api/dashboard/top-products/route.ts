@@ -6,29 +6,17 @@ import {
   unauthorizedResponse,
   serverErrorResponse,
 } from "@/lib/api-response";
-import { getTodayString } from "@/lib/date-utils";
 
 export async function GET(request: NextRequest) {
   try {
     const admin = await requireAdmin(request);
     if (!admin) return unauthorizedResponse();
 
-    // Start and end of current month in Colombia timezone (UTC-5)
-    const todayStr = getTodayString(); // "YYYY-MM-DD"
-    const [year, month] = todayStr.split("-").map(Number);
-
-    // Colombia midnight = 05:00 UTC
-    const monthStart = new Date(`${year}-${String(month).padStart(2, "0")}-01T05:00:00.000Z`);
-    const nextMonth = month === 12 ? 1 : month + 1;
-    const nextYear = month === 12 ? year + 1 : year;
-    const monthEnd = new Date(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T05:00:00.000Z`);
-
     const items = await prisma.orderItem.groupBy({
       by: ["productId", "productName"],
       where: {
         order: {
           status: { not: "cancelled" },
-          createdAt: { gte: monthStart, lt: monthEnd },
         },
       },
       _sum: {
@@ -50,13 +38,7 @@ export async function GET(request: NextRequest) {
       revenue: item._sum.totalPrice ?? 0,
     }));
 
-    return successResponse({
-      products,
-      period: {
-        from: `${year}-${String(month).padStart(2, "0")}-01`,
-        to: todayStr,
-      },
-    });
+    return successResponse({ products });
   } catch (error) {
     console.error("Top products error:", error);
     return serverErrorResponse();

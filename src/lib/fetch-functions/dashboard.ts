@@ -47,7 +47,6 @@ export interface TopProduct {
 
 export interface TopProductsData {
   products: TopProduct[];
-  period: { from: string; to: string };
 }
 
 export async function fetchWeekendTrend(): Promise<WeekendTrend> {

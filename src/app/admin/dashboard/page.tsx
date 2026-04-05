@@ -137,12 +137,12 @@ function TopProductsSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top 5 Productos del Mes</CardTitle>
+        <CardTitle>Top 5 Productos</CardTitle>
       </CardHeader>
       <CardContent>
         {topProducts.products.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No hay ventas este mes aún
+            No hay ventas aún
           </p>
         ) : (
           <div className="space-y-3">
