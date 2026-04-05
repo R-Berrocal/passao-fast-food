@@ -1,16 +1,15 @@
-import type { ApiResponse, OrderWithItems } from "@/types/models";
+import type { ApiResponse } from "@/types/models";
 import { getAuthHeaders } from "@/stores/use-auth-store";
 import { getBaseUrl } from "@/lib/utils";
 
 export interface DashboardStats {
   todaySales: number;
   todayOrdersCount: number;
+  cashToday: number;
+  digitalToday: number;
   pendingOrdersCount: number;
   preparingOrdersCount: number;
   completedTodayCount: number;
-  activeProductsCount: number;
-  customerCount: number;
-  recentOrders: OrderWithItems[];
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {

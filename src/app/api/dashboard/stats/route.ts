@@ -15,48 +15,33 @@ export async function GET(request: NextRequest) {
 
     const { startUTC: todayStart, endUTC: todayEnd } = getColombiaDateRange(getTodayString());
 
-    const [todayOrders, pendingCount, preparingCount, recentOrders, activeProductsCount, customerCount] =
-      await Promise.all([
-        // Today's orders for sales/count/completed stats (no cancelled)
-        prisma.order.findMany({
-          where: {
-            status: { not: "cancelled" },
-            createdAt: { gte: todayStart, lt: todayEnd },
-          },
-          select: { total: true, status: true },
-        }),
-        // All pending orders count
-        prisma.order.count({ where: { status: "pending" } }),
-        // All preparing orders count
-        prisma.order.count({ where: { status: "preparing" } }),
-        // 5 most recent orders for display
-        prisma.order.findMany({
-          take: 5,
-          orderBy: { createdAt: "desc" },
-          include: {
-            items: {
-              include: { additions: true },
-            },
-          },
-        }),
-        // Active products count
-        prisma.product.count({ where: { isActive: true } }),
-        // Customer count
-        prisma.user.count({ where: { role: "customer" } }),
-      ]);
+    const todayOrders = await prisma.order.findMany({
+      where: {
+        status: { not: "cancelled" },
+        createdAt: { gte: todayStart, lt: todayEnd },
+      },
+      select: { total: true, status: true, paymentMethod: true },
+    });
 
     const todaySales = todayOrders.reduce((sum, o) => sum + o.total, 0);
-    const completedToday = todayOrders.filter((o) => o.status === "delivered").length;
+    const cashToday = todayOrders
+      .filter((o) => o.paymentMethod === "cash")
+      .reduce((sum, o) => sum + o.total, 0);
+    const digitalToday = todayOrders
+      .filter((o) => o.paymentMethod !== "cash")
+      .reduce((sum, o) => sum + o.total, 0);
+    const completedTodayCount = todayOrders.filter((o) => o.status === "delivered").length;
+    const pendingOrdersCount = todayOrders.filter((o) => o.status === "pending").length;
+    const preparingOrdersCount = todayOrders.filter((o) => o.status === "preparing").length;
 
     return successResponse({
       todaySales,
       todayOrdersCount: todayOrders.length,
-      pendingOrdersCount: pendingCount,
-      preparingOrdersCount: preparingCount,
-      completedTodayCount: completedToday,
-      activeProductsCount,
-      customerCount,
-      recentOrders,
+      cashToday,
+      digitalToday,
+      pendingOrdersCount,
+      preparingOrdersCount,
+      completedTodayCount,
     });
   } catch (error) {
     console.error("Dashboard stats error:", error);
