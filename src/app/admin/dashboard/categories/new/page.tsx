@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -14,54 +14,70 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCategories } from "@/hooks/use-categories";
+import {
+  createCategorySchema,
+  type CreateCategoryInput,
+} from "@/lib/validations/product";
 
 const ImageUpload = dynamic(
   () => import("@/components/ui/image-upload").then((m) => m.ImageUpload),
   { ssr: false, loading: () => <Skeleton className="h-40 w-full rounded-lg" /> }
 );
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useCategories } from "@/hooks/use-categories";
-import { useProducts } from "@/hooks/use-products";
-import { createProductSchema, type CreateProductInput } from "@/lib/validations/product";
 
-export default function NewProductPage() {
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+export default function NewCategoryPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const slugManuallyEdited = useRef(false);
 
-  const { categories, isLoading: categoriesLoading } = useCategories();
-  const { createProduct } = useProducts();
+  const { createCategory } = useCategories();
 
-  const form = useForm<CreateProductInput>({
-    resolver: zodResolver(createProductSchema),
+  const form = useForm<CreateCategoryInput>({
+    resolver: zodResolver(createCategorySchema),
     defaultValues: {
       name: "",
+      slug: "",
       description: "",
-      price: 0,
-      image: "https://sin-imagen.com/default-product.png",
-      categoryId: "",
-      isActive: true,
-      isAvailable: true,
+      image: "",
       displayOrder: 0,
+      isActive: true,
+      allowsAdditions: true,
     },
   });
 
-  const onSubmit = async (data: CreateProductInput) => {
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    form.setValue("name", e.target.value);
+    if (!slugManuallyEdited.current) {
+      form.setValue("slug", generateSlug(e.target.value));
+    }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    slugManuallyEdited.current = true;
+    form.setValue("slug", e.target.value);
+  };
+
+  const onSubmit = async (data: CreateCategoryInput) => {
     setIsSubmitting(true);
     setError(null);
 
-    const product = await createProduct(data);
+    const category = await createCategory(data);
 
-    if (product) {
-      router.push("/admin/dashboard/products");
+    if (category) {
+      router.push("/admin/dashboard/categories");
     } else {
-      setError("Error al crear el producto");
+      setError("Error al crear la categoría. Es posible que el slug ya exista.");
     }
 
     setIsSubmitting(false);
@@ -71,13 +87,15 @@ export default function NewProductPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/dashboard/products">
+          <Link href="/admin/dashboard/categories">
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
         <div>
-          <h2 className="text-2xl font-bold">Nuevo Producto</h2>
-          <p className="text-muted-foreground">Crea un nuevo producto para el menú</p>
+          <h2 className="text-2xl font-bold">Nueva Categoría</h2>
+          <p className="text-muted-foreground">
+            Crea una nueva categoría para organizar el menú
+          </p>
         </div>
       </div>
 
@@ -85,15 +103,16 @@ export default function NewProductPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Información del Producto</CardTitle>
+              <CardTitle>Información de la Categoría</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
-                  placeholder="Ej: Arepa Especial"
-                  {...form.register("name")}
+                  placeholder="Ej: Bebidas"
+                  value={form.watch("name")}
+                  onChange={handleNameChange}
                 />
                 {form.formState.errors.name && (
                   <p className="text-sm text-destructive">
@@ -103,62 +122,42 @@ export default function NewProductPage() {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="slug">
+                  Slug *{" "}
+                  <span className="text-xs text-muted-foreground font-normal">
+                    (identificador único en la URL)
+                  </span>
+                </Label>
+                <Input
+                  id="slug"
+                  placeholder="Ej: bebidas"
+                  value={form.watch("slug")}
+                  onChange={handleSlugChange}
+                />
+                {form.formState.errors.slug && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.slug.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe el producto..."
+                  placeholder="Describe la categoría..."
                   rows={3}
                   {...form.register("description")}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Precio (COP) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    placeholder="15000"
-                    {...form.register("price", { valueAsNumber: true })}
-                  />
-                  {form.formState.errors.price && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.price.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="category">Categoría *</Label>
-                  <Select
-                    value={form.watch("categoryId")}
-                    onValueChange={(value) => form.setValue("categoryId", value)}
-                    disabled={categoriesLoading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.categoryId && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.categoryId.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* <div className="space-y-2">
-                <Label>Imagen del Producto *</Label>
+              <div className="space-y-2">
+                <Label>Imagen (opcional)</Label>
                 <ImageUpload
-                  value={form.watch("image")}
-                  onChange={(url) => form.setValue("image", url, { shouldValidate: true })}
+                  value={form.watch("image") ?? ""}
+                  onChange={(url) =>
+                    form.setValue("image", url, { shouldValidate: true })
+                  }
                   disabled={isSubmitting}
                 />
                 {form.formState.errors.image && (
@@ -166,7 +165,7 @@ export default function NewProductPage() {
                     {form.formState.errors.image.message}
                   </p>
                 )}
-              </div> */}
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="displayOrder">Orden de visualización</Label>
@@ -176,40 +175,48 @@ export default function NewProductPage() {
                   placeholder="0"
                   {...form.register("displayOrder", { valueAsNumber: true })}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Menor número = aparece primero en el menú
+                </p>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Estado</CardTitle>
+              <CardTitle>Configuración</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="isActive">Producto Activo</Label>
+                  <Label htmlFor="isActive">Categoría activa</Label>
                   <p className="text-sm text-muted-foreground">
-                    El producto aparecerá en el menú
+                    La categoría y sus productos aparecerán en el menú
                   </p>
                 </div>
                 <Switch
                   id="isActive"
                   checked={form.watch("isActive")}
-                  onCheckedChange={(checked) => form.setValue("isActive", checked)}
+                  onCheckedChange={(checked) =>
+                    form.setValue("isActive", checked)
+                  }
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="isAvailable">Disponible</Label>
+                  <Label htmlFor="allowsAdditions">Permite adiciones</Label>
                   <p className="text-sm text-muted-foreground">
-                    El producto está disponible para ordenar
+                    Los productos de esta categoría ofrecerán adiciones al
+                    agregarlos al carrito
                   </p>
                 </div>
                 <Switch
-                  id="isAvailable"
-                  checked={form.watch("isAvailable")}
-                  onCheckedChange={(checked) => form.setValue("isAvailable", checked)}
+                  id="allowsAdditions"
+                  checked={form.watch("allowsAdditions")}
+                  onCheckedChange={(checked) =>
+                    form.setValue("allowsAdditions", checked)
+                  }
                 />
               </div>
 
@@ -220,17 +227,26 @@ export default function NewProductPage() {
               )}
 
               <div className="flex gap-4">
-                <Button type="button" variant="outline" asChild className="flex-1">
-                  <Link href="/admin/dashboard/products">Cancelar</Link>
+                <Button
+                  type="button"
+                  variant="outline"
+                  asChild
+                  className="flex-1"
+                >
+                  <Link href="/admin/dashboard/categories">Cancelar</Link>
                 </Button>
-                <Button type="submit" className="flex-1 cursor-pointer" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  className="flex-1 cursor-pointer"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creando...
                     </>
                   ) : (
-                    "Crear Producto"
+                    "Crear Categoría"
                   )}
                 </Button>
               </div>

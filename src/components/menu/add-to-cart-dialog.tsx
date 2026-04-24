@@ -19,11 +19,18 @@ import type { Addition, Product } from "@/types/models";
 interface AddToCartDialogProps {
   product: Product | null;
   additions: Addition[];
+  allowsAdditions: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AddToCartDialog({ product, additions, open, onOpenChange }: AddToCartDialogProps) {
+export function AddToCartDialog({
+  product,
+  additions,
+  allowsAdditions,
+  open,
+  onOpenChange,
+}: AddToCartDialogProps) {
   const [selectedAdditions, setSelectedAdditions] = useState<CartItemAddition[]>([]);
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore((state) => state.addItem);
@@ -31,9 +38,7 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
   const toggleAddition = useCallback((addition: { id: string; name: string; price: number }) => {
     setSelectedAdditions((prev) => {
       const exists = prev.find((a) => a.id === addition.id);
-      if (exists) {
-        return prev.filter((a) => a.id !== addition.id);
-      }
+      if (exists) return prev.filter((a) => a.id !== addition.id);
       return [...prev, { id: addition.id, name: addition.name, price: addition.price }];
     });
   }, []);
@@ -67,7 +72,6 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
     setSelectedAdditions([]);
     setQuantity(1);
     onOpenChange(false);
-    // openCart();
   };
 
   const handleClose = () => {
@@ -93,49 +97,52 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
           </div>
         </div>
 
-        <Separator />
-
-        <div className="py-2">
-          <h4 className="mb-3 font-semibold">Adiciones (opcional)</h4>
-          <ScrollArea className="h-[200px] pr-4">
-            <div className="space-y-2">
-              {additions.map((addition) => {
-                const isSelected = selectedAdditions.some((a) => a.id === addition.id);
-                return (
-                  <button
-                    key={addition.id}
-                    onClick={() => toggleAddition(addition)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-lg border p-3 text-left transition-all",
-                      isSelected
-                        ? "border-primary bg-primary/10"
-                        : "border-border hover:border-primary/50"
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
+        {allowsAdditions && (
+          <>
+            <Separator />
+            <div className="py-2">
+              <h4 className="mb-3 font-semibold">Adiciones (opcional)</h4>
+              <ScrollArea className="h-[200px] pr-4">
+                <div className="space-y-2">
+                  {additions.map((addition) => {
+                    const isSelected = selectedAdditions.some((a) => a.id === addition.id);
+                    return (
+                      <button
+                        key={addition.id}
+                        onClick={() => toggleAddition(addition)}
                         className={cn(
-                          "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all",
+                          "flex w-full items-center justify-between rounded-lg border p-3 text-left transition-all",
                           isSelected
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-muted-foreground"
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/50"
                         )}
                       >
-                        {isSelected && <Check className="h-3 w-3" />}
-                      </div>
-                      <span className={cn(isSelected && "font-medium")}>
-                        {addition.name}
-                      </span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      +{formatPrice(addition.price)}
-                    </span>
-                  </button>
-                );
-              })}
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all",
+                              isSelected
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-muted-foreground"
+                            )}
+                          >
+                            {isSelected && <Check className="h-3 w-3" />}
+                          </div>
+                          <span className={cn(isSelected && "font-medium")}>
+                            {addition.name}
+                          </span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          +{formatPrice(addition.price)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
             </div>
-          </ScrollArea>
-        </div>
+          </>
+        )}
 
         <Separator />
 
@@ -163,7 +170,7 @@ export function AddToCartDialog({ product, additions, open, onOpenChange }: AddT
           </div>
         </div>
 
-        {selectedAdditions.length > 0 && (
+        {allowsAdditions && selectedAdditions.length > 0 && (
           <div className="text-sm text-muted-foreground">
             Adiciones: {additionsText}
           </div>

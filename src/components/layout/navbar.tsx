@@ -35,6 +35,7 @@ const navLinks = [
   { href: "#desgranados", label: "Desgranados", icon: Utensils },
   { href: "#patacones", label: "Patacones", icon: Utensils },
   { href: "#perros", label: "Perros", icon: PawPrint },
+  { href: "#bebidas", label: "Bebidas", icon: CircleDot },
 ];
 
 export function Navbar() {

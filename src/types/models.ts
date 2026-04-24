@@ -63,6 +63,7 @@ export interface Category {
   image?: string;
   displayOrder: number;
   isActive: boolean;
+  allowsAdditions: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

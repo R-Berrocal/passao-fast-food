@@ -9,9 +9,10 @@ import { Plus } from "lucide-react";
 interface MenuItemProps {
   product: Product;
   additions: Addition[];
+  allowsAdditions: boolean;
 }
 
-export const MenuItem = memo(function MenuItem({ product, additions }: MenuItemProps) {
+export const MenuItem = memo(function MenuItem({ product, additions, allowsAdditions }: MenuItemProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
@@ -44,6 +45,7 @@ export const MenuItem = memo(function MenuItem({ product, additions }: MenuItemP
       <AddToCartDialog
         product={product}
         additions={additions}
+        allowsAdditions={allowsAdditions}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />

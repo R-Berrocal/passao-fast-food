@@ -109,6 +109,7 @@ function AddProductDialog({
   product,
   additions,
   additionsLoading,
+  allowsAdditions,
   open,
   onOpenChange,
   onConfirm,
@@ -116,6 +117,7 @@ function AddProductDialog({
   product: Product | null;
   additions: Addition[];
   additionsLoading: boolean;
+  allowsAdditions: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (product: Product, additions: CartItemAddition[], quantity: number) => void;
@@ -174,6 +176,7 @@ function AddProductDialog({
           </div>
 
           {/* Additions */}
+          {allowsAdditions && (
           <div>
             <p className="text-sm font-medium mb-2">Adiciones</p>
             {additionsLoading ? (
@@ -222,6 +225,7 @@ function AddProductDialog({
               </ScrollArea>
             )}
           </div>
+          )}
 
           {/* Price summary */}
           <div className="rounded-md bg-muted p-3 flex justify-between text-sm">
@@ -842,6 +846,11 @@ export default function NewOrderPage() {
         product={dialogProduct}
         additions={additions}
         additionsLoading={additionsLoading}
+        allowsAdditions={
+          dialogProduct
+            ? categories.find((c) => c.id === dialogProduct.categoryId)?.allowsAdditions ?? true
+            : true
+        }
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onConfirm={handleDialogConfirm}
