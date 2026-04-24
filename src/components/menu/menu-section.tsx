@@ -14,7 +14,6 @@ interface MenuSectionProps {
 export const MenuSection = memo(function MenuSection({ category, additions }: MenuSectionProps) {
   return (
     <section id={category.slug} className="scroll-mt-20">
-      {/* Kitchen-ticket style header */}
       <div className="mb-8 border-t-2 border-dashed border-primary/30 pt-5">
         <div className="mb-1.5 flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
@@ -32,7 +31,12 @@ export const MenuSection = memo(function MenuSection({ category, additions }: Me
 
       <div className="grid gap-x-12 sm:grid-cols-2">
         {category.products.map((product) => (
-          <MenuItem key={product.id} product={product} additions={additions} />
+          <MenuItem
+            key={product.id}
+            product={product}
+            additions={additions}
+            allowsAdditions={category.allowsAdditions}
+          />
         ))}
       </div>
     </section>

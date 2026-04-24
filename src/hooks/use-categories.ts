@@ -59,6 +59,7 @@ export function useCategories() {
           image: newCategory.image,
           displayOrder: newCategory.displayOrder || 0,
           isActive: newCategory.isActive ?? true,
+          allowsAdditions: newCategory.allowsAdditions ?? true,
           createdAt: new Date(),
           updatedAt: new Date(),
           _count: { products: 0 },

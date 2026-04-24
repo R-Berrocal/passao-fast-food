@@ -16,6 +16,10 @@ export function getBaseUrl(): string {
     return "";
   }
 
+  if(process.env.NODE_ENV === "development") {
+    return "http://localhost:3000";
+  }
+
   // Server-side: use absolute URL
   // NEXT_PUBLIC_BASE_URL should be set in Vercel to the production domain
   if (process.env.NEXT_PUBLIC_BASE_URL) {

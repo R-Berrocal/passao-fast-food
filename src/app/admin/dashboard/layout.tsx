@@ -20,6 +20,7 @@ import {
   Settings,
   ShoppingBag,
   BarChart3,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -44,6 +45,11 @@ const navigation = [
     name: "Adiciones",
     href: "/admin/dashboard/additions",
     icon: CirclePlus,
+  },
+  {
+    name: "Categorías",
+    href: "/admin/dashboard/categories",
+    icon: Tag,
   },
   {
     name: "Órdenes",

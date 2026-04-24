@@ -29,6 +29,7 @@ export const createCategorySchema = z.object({
   image: z.string().url().optional().or(z.literal("")),
   displayOrder: z.number().int(),
   isActive: z.boolean(),
+  allowsAdditions: z.boolean(),
 });
 
 export const updateCategorySchema = createCategorySchema.partial();

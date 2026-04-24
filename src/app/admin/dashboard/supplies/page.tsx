@@ -157,6 +157,12 @@ export default function SuppliesPage() {
                       >
                         {supply.category}
                       </Badge>
+                      <Badge
+                        variant="outline"
+                        className={`ml-1 text-xs ${supply.paymentMethod === 'cash' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-blue-500/10 text-blue-500 border-blue-500/20"} `}
+                      >
+                        {supply.paymentMethod}
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-lg">{formatPrice(supply.amount)}</span>
